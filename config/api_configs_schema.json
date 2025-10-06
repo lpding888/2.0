@@ -1,0 +1,36 @@
+{
+  "_id": "auto_generated",
+  "name": "模型名称",
+  "provider": "gemini|openai|其他",
+  "model_type": "text-to-image|image-to-image|text",
+  "api_format": "google_official|openai_compatible",
+  "api_url": "API端点URL",
+  "api_key": "API密钥或环境变量{{API_KEY}}",
+  "model_name": "实际模型名称，如gemini-2.5-flash-image",
+  "capabilities": ["text-to-image", "image-editing"],
+  "status": "active|inactive",
+  "is_active": true,
+  "priority": 5,
+  "weight": 5,
+  "cost_per_request": 0.01,
+  "max_requests_per_minute": 60,
+  "timeout": 60000,
+  "parameters": {
+    "default": {
+      "width": 1024,
+      "height": 1024,
+      "quality": "standard",
+      "style": "natural"
+    },
+    "limits": {
+      "max_width": 2048,
+      "max_height": 2048,
+      "max_count": 4
+    }
+  },
+  "headers": {
+    "additional_headers": {}
+  },
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}

@@ -1,0 +1,17 @@
+{
+  "startTime": 1759675974442,
+  "endTime": 1759675994073,
+  "numTotalTests": 1,
+  "numTodoTests": 0,
+  "testResults": [],
+  "success": false,
+  "numPassedTests": 0,
+  "numFailedTests": 0,
+  "env": {
+    "wxapplibVersion": "3.10.1",
+    "simulatorType": "wechat",
+    "devtoolsVersion": "1.06.2504030",
+    "openid": "o6zAJs3c0tsZH5pHAnhHPmTq6PGo",
+    "device": "iPhone 15 Pro Max"
+  }
+}

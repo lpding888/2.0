@@ -1,0 +1,3669 @@
+{
+  "meta": {
+    "caseId": "0e640e73-5733-46cb-819c-0d86619bcc4c",
+    "caseName": "minitest-1",
+    "remarks": "",
+    "version": "0.0.1",
+    "startTime": 1759675807741,
+    "endTime": 1759675966385,
+    "appid": "wx1ed34a87abfaa643",
+    "casePath": "",
+    "caseType": "normal",
+    "commonParams": [
+      {
+        "key": "1759675966434",
+        "name": "",
+        "value": ""
+      }
+    ]
+  },
+  "env": {
+    "wxapplibVersion": "3.10.1",
+    "devtoolsVersion": "1.06.2504030",
+    "openid": "o6zAJs3c0tsZH5pHAnhHPmTq6PGo",
+    "entry": {
+      "path": "pages/index/index",
+      "query": "",
+      "scene": 1001
+    },
+    "mock": [
+      "none"
+    ],
+    "maxWaitFor": 10000,
+    "ignoreSelectors": [],
+    "mockAPIs": [],
+    "cleanCache": [
+      "none"
+    ],
+    "groupTouch": false,
+    "replaySetting": {
+      "screenshot": "none"
+    },
+    "simulatorType": "wechat",
+    "device": "iPhone 15 Pro Max",
+    "recordAPIs": [
+      "chooseImage"
+    ]
+  },
+  "commands": [
+    {
+      "layer": "tool",
+      "commandType": "operate",
+      "command": "startRecord",
+      "waitfor": 0,
+      "timeStamp": 1759675807741,
+      "desc": ""
+    },
+    {
+      "tagName": "text",
+      "command": "touchstart",
+      "target": "text.login-hint",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "解锁完整功能",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 246.07032775878906,
+            "clientY": 139.21871948242188,
+            "force": 1,
+            "pageX": 246.07032775878906,
+            "pageY": 139.21871948242188,
+            "screenX": 214,
+            "screenY": 259
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 246.07032775878906,
+            "clientY": 139.21871948242188,
+            "force": 1,
+            "pageX": 246.07032775878906,
+            "pageY": 139.21871948242188,
+            "screenX": 214,
+            "screenY": 259
+          }
+        ]
+      },
+      "targetCandidates": [
+        "text.login-hint",
+        ".login-hint",
+        "/view/view[2]/view/view[1]/view[2]/text[2]"
+      ],
+      "timeStamp": 5608,
+      "waitfor": 5608,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchend",
+      "target": "text.login-hint",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "解锁完整功能",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 246.07032775878906,
+            "clientY": 139.21871948242188,
+            "pageX": 246.07032775878906,
+            "pageY": 139.21871948242188,
+            "screenX": 214,
+            "screenY": 259
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "text.login-hint",
+        ".login-hint",
+        "/view/view[2]/view/view[1]/view[2]/text[2]"
+      ],
+      "timeStamp": 5709,
+      "waitfor": 101,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "tap",
+      "target": "text.login-hint",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "解锁完整功能",
+      "eventData": {
+        "detail": {
+          "x": 246.07032775878906,
+          "y": 139.21871948242188
+        },
+        "changedTouches": [
+          {
+            "clientX": 246.07032775878906,
+            "clientY": 139.21871948242188,
+            "force": 1,
+            "pageX": 246.07032775878906,
+            "pageY": 139.21871948242188,
+            "screenX": 214,
+            "screenY": 259
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 246.07032775878906,
+            "clientY": 139.21871948242188,
+            "force": 1,
+            "pageX": 246.07032775878906,
+            "pageY": 139.21871948242188,
+            "screenX": 214,
+            "screenY": 259
+          }
+        ]
+      },
+      "targetCandidates": [
+        "text.login-hint",
+        ".login-hint",
+        "/view/view[2]/view/view[1]/view[2]/text[2]"
+      ],
+      "timeStamp": 5713,
+      "waitfor": 4,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchstart",
+      "target": "/view/view[4]/view[1]/view[2]",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "AI摄影\n智能生成高质量摄影作品",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 302.7421875,
+            "clientY": 455.8828430175781,
+            "force": 1,
+            "pageX": 302.7421875,
+            "pageY": 455.8828430175781,
+            "screenX": 239.5,
+            "screenY": 401.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 302.7421875,
+            "clientY": 455.8828430175781,
+            "force": 1,
+            "pageX": 302.7421875,
+            "pageY": 455.8828430175781,
+            "screenX": 239.5,
+            "screenY": 401.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[1]/view[2]"
+      ],
+      "timeStamp": 11034,
+      "waitfor": 5321,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchend",
+      "target": "/view/view[4]/view[1]/view[2]",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "AI摄影\n智能生成高质量摄影作品",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 302.7421875,
+            "clientY": 455.8828430175781,
+            "pageX": 302.7421875,
+            "pageY": 455.8828430175781,
+            "screenX": 239.5,
+            "screenY": 401.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[1]/view[2]"
+      ],
+      "timeStamp": 11130,
+      "waitfor": 96,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "tap",
+      "target": "/view/view[4]/view[1]/view[2]",
+      "value": null,
+      "path": "pages/index/index",
+      "text": "AI摄影\n智能生成高质量摄影作品",
+      "eventData": {
+        "detail": {
+          "x": 302.7421875,
+          "y": 455.8828430175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 302.7421875,
+            "clientY": 455.8828430175781,
+            "force": 1,
+            "pageX": 302.7421875,
+            "pageY": 455.8828430175781,
+            "screenX": 239.5,
+            "screenY": 401.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 302.7421875,
+            "clientY": 455.8828430175781,
+            "force": 1,
+            "pageX": 302.7421875,
+            "pageY": 455.8828430175781,
+            "screenX": 239.5,
+            "screenY": 401.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[1]/view[2]"
+      ],
+      "timeStamp": 11131,
+      "waitfor": 1,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchstart",
+      "target": "/view/view[2]/view[2]/view/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/photography/photography",
+      "text": "添加图片",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 107.34375762939453,
+            "clientY": 302.5547180175781,
+            "force": 1,
+            "pageX": 107.34375762939453,
+            "pageY": 302.5547180175781,
+            "screenX": 192,
+            "screenY": 332.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 107.34375762939453,
+            "clientY": 302.5547180175781,
+            "force": 1,
+            "pageX": 107.34375762939453,
+            "pageY": 302.5547180175781,
+            "screenX": 192,
+            "screenY": 332.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view[2]/view/text[2]"
+      ],
+      "timeStamp": 13712,
+      "waitfor": 2581,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchend",
+      "target": "/view/view[2]/view[2]/view/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/photography/photography",
+      "text": "添加图片",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 107.34375762939453,
+            "clientY": 302.5547180175781,
+            "pageX": 107.34375762939453,
+            "pageY": 302.5547180175781,
+            "screenX": 192,
+            "screenY": 332.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view[2]/view/text[2]"
+      ],
+      "timeStamp": 13807,
+      "waitfor": 95,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "tap",
+      "target": "/view/view[2]/view[2]/view/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/photography/photography",
+      "text": "添加图片",
+      "eventData": {
+        "detail": {
+          "x": 107.34375762939453,
+          "y": 302.5547180175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 107.34375762939453,
+            "clientY": 302.5547180175781,
+            "force": 1,
+            "pageX": 107.34375762939453,
+            "pageY": 302.5547180175781,
+            "screenX": 192,
+            "screenY": 332.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 107.34375762939453,
+            "clientY": 302.5547180175781,
+            "force": 1,
+            "pageX": 107.34375762939453,
+            "pageY": 302.5547180175781,
+            "screenX": 192,
+            "screenY": 332.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view[2]/view/text[2]"
+      ],
+      "timeStamp": 13807,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "layer": "appservice",
+      "command": "mock",
+      "rule": {
+        "ruleId": "3722698c-39db-424a-b3bc-fb25c204f6f2",
+        "ruleName": "chooseImage",
+        "apiName": "chooseImage",
+        "enable": true,
+        "verifyFail": false,
+        "isOneTime": true,
+        "filterList": [],
+        "returnConfig": {
+          "returnType": "succ",
+          "generateType": "manual",
+          "manual": {
+            "succ": {
+              "resStr": "{\"errMsg\":\"chooseImage:ok\",\"tempFilePaths\":[\"http://tmp/FkrqfLYibjiA14a2961ad38c9b5d71c103641ac86744.jpg\",\"http://tmp/6f1HK1H5QpmV85eeff17a0d59e5c2681534b722334c3.jpg\"],\"tempFiles\":[{\"path\":\"http://tmp/FkrqfLYibjiA14a2961ad38c9b5d71c103641ac86744.jpg\",\"size\":68970},{\"path\":\"http://tmp/6f1HK1H5QpmV85eeff17a0d59e5c2681534b722334c3.jpg\",\"size\":77181}]}"
+            },
+            "fail": {
+              "resStr": ""
+            }
+          }
+        },
+        "originArgs": [
+          {
+            "count": 3,
+            "sizeType": [
+              "compressed",
+              "original"
+            ],
+            "sourceType": [
+              "album",
+              "camera"
+            ]
+          }
+        ],
+        "mediaFiles": {
+          "http://tmp/FkrqfLYibjiA14a2961ad38c9b5d71c103641ac86744.jpg": "FkrqfLYibjiA14a2961ad38c9b5d71c103641ac86744.jpg",
+          "http://tmp/6f1HK1H5QpmV85eeff17a0d59e5c2681534b722334c3.jpg": "6f1HK1H5QpmV85eeff17a0d59e5c2681534b722334c3.jpg"
+        }
+      },
+      "desc": ""
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 888.888916015625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 26579,
+      "waitfor": 10000,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1555.555419921875,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 27086,
+      "waitfor": 507,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 888.8888549804688,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 27576,
+      "waitfor": 490,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 444.44439697265625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 27927,
+      "waitfor": 351,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 398.10943603515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 842.5538330078125,
+            "screenX": 174,
+            "screenY": 375.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 398.10943603515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 842.5538330078125,
+            "screenX": 174,
+            "screenY": 375.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 30488,
+      "waitfor": 2561,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 398.10943603515625,
+            "pageX": 67.34375762939453,
+            "pageY": 842.5538330078125,
+            "screenX": 174,
+            "screenY": 375.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 30667,
+      "waitfor": 179,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {
+          "x": 67.34375762939453,
+          "y": 842.5538330078125
+        },
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 398.10943603515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 842.5538330078125,
+            "screenX": 174,
+            "screenY": 375.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 398.10943603515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 842.5538330078125,
+            "screenX": 174,
+            "screenY": 375.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 30668,
+      "waitfor": 1,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 393.66412353515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 838.1085205078125,
+            "screenX": 174,
+            "screenY": 373.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 393.66412353515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 838.1085205078125,
+            "screenX": 174,
+            "screenY": 373.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 31005,
+      "waitfor": 337,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 393.66412353515625,
+            "pageX": 67.34375762939453,
+            "pageY": 838.1085205078125,
+            "screenX": 174,
+            "screenY": 373.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 31109,
+      "waitfor": 104,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "-",
+      "eventData": {
+        "detail": {
+          "x": 67.34375762939453,
+          "y": 838.1085205078125
+        },
+        "changedTouches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 393.66412353515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 838.1085205078125,
+            "screenX": 174,
+            "screenY": 373.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 67.34375762939453,
+            "clientY": 393.66412353515625,
+            "force": 1,
+            "pageX": 67.34375762939453,
+            "pageY": 838.1085205078125,
+            "screenX": 174,
+            "screenY": 373.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[2]/view[2]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 31109,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 888.8888549804688,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 31811,
+      "waitfor": 702,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[2]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "欧洲",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 247.34375,
+            "clientY": 285.88287353515625,
+            "force": 1,
+            "pageX": 247.34375,
+            "pageY": 1174.771728515625,
+            "screenX": 255,
+            "screenY": 325
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 247.34375,
+            "clientY": 285.88287353515625,
+            "force": 1,
+            "pageX": 247.34375,
+            "pageY": 1174.771728515625,
+            "screenX": 255,
+            "screenY": 325
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[2]"
+      ],
+      "timeStamp": 34412,
+      "waitfor": 2601,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[2]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "欧洲",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 247.34375,
+            "clientY": 285.88287353515625,
+            "pageX": 247.34375,
+            "pageY": 1174.771728515625,
+            "screenX": 255,
+            "screenY": 325
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[2]"
+      ],
+      "timeStamp": 34506,
+      "waitfor": 94,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[2]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "欧洲",
+      "eventData": {
+        "detail": {
+          "x": 247.34375,
+          "y": 1174.771728515625
+        },
+        "changedTouches": [
+          {
+            "clientX": 247.34375,
+            "clientY": 285.88287353515625,
+            "force": 1,
+            "pageX": 247.34375,
+            "pageY": 1174.771728515625,
+            "screenX": 255,
+            "screenY": 325
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 247.34375,
+            "clientY": 285.88287353515625,
+            "force": 1,
+            "pageX": 247.34375,
+            "pageY": 1174.771728515625,
+            "screenX": 255,
+            "screenY": 325
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[2]"
+      ],
+      "timeStamp": 34507,
+      "waitfor": 1,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "亚洲",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 248.45309448242188,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 248.45309448242188,
+            "pageY": 1134.771728515625,
+            "screenX": 255.5,
+            "screenY": 307
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 248.45309448242188,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 248.45309448242188,
+            "pageY": 1134.771728515625,
+            "screenX": 255.5,
+            "screenY": 307
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 34804,
+      "waitfor": 297,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "亚洲",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 248.45309448242188,
+            "clientY": 245.88287353515625,
+            "pageX": 248.45309448242188,
+            "pageY": 1134.771728515625,
+            "screenX": 255.5,
+            "screenY": 307
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 34937,
+      "waitfor": 133,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "/view/view[4]/view[3]/view[2]/view/button[1]",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "亚洲",
+      "eventData": {
+        "detail": {
+          "x": 248.45309448242188,
+          "y": 1134.771728515625
+        },
+        "changedTouches": [
+          {
+            "clientX": 248.45309448242188,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 248.45309448242188,
+            "pageY": 1134.771728515625,
+            "screenX": 255.5,
+            "screenY": 307
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 248.45309448242188,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 248.45309448242188,
+            "pageY": 1134.771728515625,
+            "screenX": 255.5,
+            "screenY": 307
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[4]/view[3]/view[2]/view/button[1]"
+      ],
+      "timeStamp": 34937,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1333.333251953125,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 35469,
+      "waitfor": 532,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1777.777587890625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 36327,
+      "waitfor": 858,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[6]/view[2]/view[7]/image",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 126.2265853881836,
+            "clientY": 593.664306640625,
+            "force": 1,
+            "pageX": 126.2265853881836,
+            "pageY": 2371.44189453125,
+            "screenX": 200.5,
+            "screenY": 463.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 126.2265853881836,
+            "clientY": 593.664306640625,
+            "force": 1,
+            "pageX": 126.2265853881836,
+            "pageY": 2371.44189453125,
+            "screenX": 200.5,
+            "screenY": 463.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[6]/view[2]/view[7]/image"
+      ],
+      "timeStamp": 37607,
+      "waitfor": 1280,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[6]/view[2]/view[7]/image",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 126.2265853881836,
+            "clientY": 593.664306640625,
+            "pageX": 126.2265853881836,
+            "pageY": 2371.44189453125,
+            "screenX": 200.5,
+            "screenY": 463.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[6]/view[2]/view[7]/image"
+      ],
+      "timeStamp": 37695,
+      "waitfor": 88,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "tap",
+      "target": "/view/view[6]/view[2]/view[7]/image",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "",
+      "eventData": {
+        "detail": {
+          "x": 126.2265853881836,
+          "y": 2371.44189453125
+        },
+        "changedTouches": [
+          {
+            "clientX": 126.2265853881836,
+            "clientY": 593.664306640625,
+            "force": 1,
+            "pageX": 126.2265853881836,
+            "pageY": 2371.44189453125,
+            "screenX": 200.5,
+            "screenY": 463.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 126.2265853881836,
+            "clientY": 593.664306640625,
+            "force": 1,
+            "pageX": 126.2265853881836,
+            "pageY": 2371.44189453125,
+            "screenX": 200.5,
+            "screenY": 463.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[6]/view[2]/view[7]/image"
+      ],
+      "timeStamp": 37697,
+      "waitfor": 2,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/photography/photography",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1978,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 38253,
+      "waitfor": 556,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "button.generate-btn",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "开始生成",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 347.34375,
+            "clientY": 778.109375,
+            "force": 1,
+            "pageX": 347.34375,
+            "pageY": 2756.109375,
+            "screenX": 300,
+            "screenY": 546.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 347.34375,
+            "clientY": 778.109375,
+            "force": 1,
+            "pageX": 347.34375,
+            "pageY": 2756.109375,
+            "screenX": 300,
+            "screenY": 546.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.generate-btn",
+        ".generate-btn",
+        "/view/view[8]/button[3]"
+      ],
+      "timeStamp": 38888,
+      "waitfor": 635,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "button.generate-btn",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "开始生成",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 347.34375,
+            "clientY": 778.109375,
+            "pageX": 347.34375,
+            "pageY": 2756.109375,
+            "screenX": 300,
+            "screenY": 546.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "button.generate-btn",
+        ".generate-btn",
+        "/view/view[8]/button[3]"
+      ],
+      "timeStamp": 38996,
+      "waitfor": 108,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "button.generate-btn",
+      "value": null,
+      "path": "pages/photography/photography",
+      "text": "开始生成",
+      "eventData": {
+        "detail": {
+          "x": 347.34375,
+          "y": 2756.109375
+        },
+        "changedTouches": [
+          {
+            "clientX": 347.34375,
+            "clientY": 778.109375,
+            "force": 1,
+            "pageX": 347.34375,
+            "pageY": 2756.109375,
+            "screenX": 300,
+            "screenY": 546.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 347.34375,
+            "clientY": 778.109375,
+            "force": 1,
+            "pageX": 347.34375,
+            "pageY": 2756.109375,
+            "screenX": 300,
+            "screenY": 546.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.generate-btn",
+        ".generate-btn",
+        "/view/view[8]/button[3]"
+      ],
+      "timeStamp": 38999,
+      "waitfor": 3,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 140.32815551757812,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 140.32815551757812,
+            "screenX": 158.5,
+            "screenY": 259.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 140.32815551757812,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 140.32815551757812,
+            "screenX": 158.5,
+            "screenY": 259.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 88307,
+      "waitfor": 10000,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 137.22222900390625,
+            "clientY": 581.5,
+            "force": 1,
+            "pageX": 137.22222900390625,
+            "pageY": 581.5,
+            "screenX": 167.5,
+            "screenY": 458.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 137.22222900390625,
+            "clientY": 581.5,
+            "force": 1,
+            "pageX": 137.22222900390625,
+            "pageY": 581.5,
+            "screenX": 167.5,
+            "screenY": 458.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 88489,
+      "waitfor": 182,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 137.22222900390625,
+            "clientY": 581.5,
+            "pageX": 137.22222900390625,
+            "pageY": 581.5,
+            "screenX": 167.5,
+            "screenY": 458.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 88613,
+      "waitfor": 124,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:50",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 158.5390625,
+            "clientY": 293.6640930175781,
+            "force": 1,
+            "pageX": 158.5390625,
+            "pageY": 293.6640930175781,
+            "screenX": 177,
+            "screenY": 328.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 158.5390625,
+            "clientY": 293.6640930175781,
+            "force": 1,
+            "pageX": 158.5390625,
+            "pageY": 293.6640930175781,
+            "screenX": 177,
+            "screenY": 328.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 89956,
+      "waitfor": 1343,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:50",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 157.22222900390625,
+            "clientY": 292.6111755371094,
+            "pageX": 157.22222900390625,
+            "pageY": 292.6111755371094,
+            "screenX": 176.5,
+            "screenY": 328.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 90050,
+      "waitfor": 94,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "tap",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:50",
+      "eventData": {
+        "detail": {
+          "x": 157.22222900390625,
+          "y": 292.6111755371094
+        },
+        "changedTouches": [
+          {
+            "clientX": 158.5390625,
+            "clientY": 293.6640930175781,
+            "force": 1,
+            "pageX": 158.5390625,
+            "pageY": 293.6640930175781,
+            "screenX": 177,
+            "screenY": 328.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 158.5390625,
+            "clientY": 293.6640930175781,
+            "force": 1,
+            "pageX": 158.5390625,
+            "pageY": 293.6640930175781,
+            "screenX": 177,
+            "screenY": 328.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 90051,
+      "waitfor": 1,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 888.888916015625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 96275,
+      "waitfor": 6224,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1545,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 96909,
+      "waitfor": 634,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 878.3334350585938,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 97525,
+      "waitfor": 616,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 433.88897705078125,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 98159,
+      "waitfor": 634,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "button.copy-btn",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "复制",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 279.578125,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 279.578125,
+            "pageY": 679.7718505859375,
+            "screenX": 260.5,
+            "screenY": 307
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 279.578125,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 279.578125,
+            "pageY": 679.7718505859375,
+            "screenX": 260.5,
+            "screenY": 307
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.copy-btn",
+        ".copy-btn",
+        "/view/view[2]/view/view[2]/view[1]/button"
+      ],
+      "timeStamp": 99247,
+      "waitfor": 1088,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "button.copy-btn",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "复制",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 279.578125,
+            "clientY": 245.88287353515625,
+            "pageX": 279.578125,
+            "pageY": 679.7718505859375,
+            "screenX": 260.5,
+            "screenY": 307
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "button.copy-btn",
+        ".copy-btn",
+        "/view/view[2]/view/view[2]/view[1]/button"
+      ],
+      "timeStamp": 99336,
+      "waitfor": 89,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "button.copy-btn",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "复制",
+      "eventData": {
+        "detail": {
+          "x": 279.578125,
+          "y": 679.7718505859375
+        },
+        "changedTouches": [
+          {
+            "clientX": 279.578125,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 279.578125,
+            "pageY": 679.7718505859375,
+            "screenX": 260.5,
+            "screenY": 307
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 279.578125,
+            "clientY": 245.88287353515625,
+            "force": 1,
+            "pageX": 279.578125,
+            "pageY": 679.7718505859375,
+            "screenX": 260.5,
+            "screenY": 307
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.copy-btn",
+        ".copy-btn",
+        "/view/view[2]/view/view[2]/view[1]/button"
+      ],
+      "timeStamp": 99336,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1100.5556640625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 99993,
+      "waitfor": 657,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1545,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 100300,
+      "waitfor": 307,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1100.5556640625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 101217,
+      "waitfor": 917,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 878.3334350585938,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 101733,
+      "waitfor": 516,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 656.1112060546875,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 102117,
+      "waitfor": 384,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 433.88897705078125,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 102659,
+      "waitfor": 542,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1100.5556640625,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 103159,
+      "waitfor": 500,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 1322.77783203125,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 103425,
+      "waitfor": 266,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 211.666748046875,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 104458,
+      "waitfor": 1033,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 0,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 105675,
+      "waitfor": 1217,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 277.3593444824219,
+            "clientY": 331.4375305175781,
+            "force": 1,
+            "pageX": 277.3593444824219,
+            "pageY": 331.4375305175781,
+            "screenX": 259.5,
+            "screenY": 345.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 277.3593444824219,
+            "clientY": 331.4375305175781,
+            "force": 1,
+            "pageX": 277.3593444824219,
+            "pageY": 331.4375305175781,
+            "screenX": 259.5,
+            "screenY": 345.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 105953,
+      "waitfor": 278,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 71.66666412353516,
+            "clientY": 307.0555114746094,
+            "force": 1,
+            "pageX": 71.66666412353516,
+            "pageY": 307.0555114746094,
+            "screenX": 167,
+            "screenY": 335
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 71.66666412353516,
+            "clientY": 307.0555114746094,
+            "force": 1,
+            "pageX": 71.66666412353516,
+            "pageY": 307.0555114746094,
+            "screenX": 167,
+            "screenY": 335
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 106099,
+      "waitfor": 146,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 71.66666412353516,
+            "clientY": 307.0555114746094,
+            "pageX": 71.66666412353516,
+            "pageY": 307.0555114746094,
+            "screenX": 167,
+            "screenY": 335
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 106115,
+      "waitfor": 16,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 200.6875,
+            "clientY": 340.3281555175781,
+            "force": 1,
+            "pageX": 200.6875,
+            "pageY": 340.3281555175781,
+            "screenX": 225,
+            "screenY": 349.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 200.6875,
+            "clientY": 340.3281555175781,
+            "force": 1,
+            "pageX": 200.6875,
+            "pageY": 340.3281555175781,
+            "screenX": 225,
+            "screenY": 349.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 107864,
+      "waitfor": 1749,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 393.888916015625,
+            "clientY": 314.8332824707031,
+            "force": 1,
+            "pageX": 393.888916015625,
+            "pageY": 314.8332824707031,
+            "screenX": 312,
+            "screenY": 338.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 393.888916015625,
+            "clientY": 314.8332824707031,
+            "force": 1,
+            "pageX": 393.888916015625,
+            "pageY": 314.8332824707031,
+            "screenX": 312,
+            "screenY": 338.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 108028,
+      "waitfor": 164,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 393.888916015625,
+            "clientY": 314.8332824707031,
+            "pageX": 393.888916015625,
+            "pageY": 314.8332824707031,
+            "screenX": 312,
+            "screenY": 338.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 108052,
+      "waitfor": 24,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 258.4687805175781,
+            "clientY": 348.1094055175781,
+            "force": 1,
+            "pageX": 258.4687805175781,
+            "pageY": 348.1094055175781,
+            "screenX": 251,
+            "screenY": 353
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 258.4687805175781,
+            "clientY": 348.1094055175781,
+            "force": 1,
+            "pageX": 258.4687805175781,
+            "pageY": 348.1094055175781,
+            "screenX": 251,
+            "screenY": 353
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 109805,
+      "waitfor": 1753,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 196.11111450195312,
+            "clientY": 352.6111755371094,
+            "force": 1,
+            "pageX": 196.11111450195312,
+            "pageY": 352.6111755371094,
+            "screenX": 223,
+            "screenY": 355.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 196.11111450195312,
+            "clientY": 352.6111755371094,
+            "force": 1,
+            "pageX": 196.11111450195312,
+            "pageY": 352.6111755371094,
+            "screenX": 223,
+            "screenY": 355.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 109933,
+      "waitfor": 128,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[1]/swiper/swiper-item[1]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 196.11111450195312,
+            "clientY": 352.6111755371094,
+            "pageX": 196.11111450195312,
+            "pageY": 352.6111755371094,
+            "screenX": 223,
+            "screenY": 355.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[1]/image"
+      ],
+      "timeStamp": 109950,
+      "waitfor": 17,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 220.6875,
+            "clientY": 324.7734680175781,
+            "force": 1,
+            "pageX": 220.6875,
+            "pageY": 324.7734680175781,
+            "screenX": 234,
+            "screenY": 342.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 220.6875,
+            "clientY": 324.7734680175781,
+            "force": 1,
+            "pageX": 220.6875,
+            "pageY": 324.7734680175781,
+            "screenX": 234,
+            "screenY": 342.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 111029,
+      "waitfor": 1079,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 317.22222900390625,
+            "clientY": 318.1666564941406,
+            "force": 1,
+            "pageX": 317.22222900390625,
+            "pageY": 318.1666564941406,
+            "screenX": 277.5,
+            "screenY": 340
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 317.22222900390625,
+            "clientY": 318.1666564941406,
+            "force": 1,
+            "pageX": 317.22222900390625,
+            "pageY": 318.1666564941406,
+            "screenX": 277.5,
+            "screenY": 340
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 111151,
+      "waitfor": 122,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[1]/swiper/swiper-item[2]/image",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 317.22222900390625,
+            "clientY": 318.1666564941406,
+            "pageX": 317.22222900390625,
+            "pageY": 318.1666564941406,
+            "screenX": 277.5,
+            "screenY": 340
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[1]/swiper/swiper-item[2]/image"
+      ],
+      "timeStamp": 111172,
+      "waitfor": 21,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchstart",
+      "target": "/view/view[3]/view[1]/button[2]/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/work-detail/work-detail",
+      "text": "姿势裂变",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 205.13278198242188,
+            "clientY": 743.6641845703125,
+            "force": 1,
+            "pageX": 205.13278198242188,
+            "pageY": 743.6641845703125,
+            "screenX": 227,
+            "screenY": 531
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 205.13278198242188,
+            "clientY": 743.6641845703125,
+            "force": 1,
+            "pageX": 205.13278198242188,
+            "pageY": 743.6641845703125,
+            "screenX": 227,
+            "screenY": 531
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[3]/view[1]/button[2]/text[2]"
+      ],
+      "timeStamp": 112845,
+      "waitfor": 1673,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchend",
+      "target": "/view/view[3]/view[1]/button[2]/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/work-detail/work-detail",
+      "text": "姿势裂变",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 205.13278198242188,
+            "clientY": 743.6641845703125,
+            "pageX": 205.13278198242188,
+            "pageY": 743.6641845703125,
+            "screenX": 227,
+            "screenY": 531
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[3]/view[1]/button[2]/text[2]"
+      ],
+      "timeStamp": 112940,
+      "waitfor": 95,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "tap",
+      "target": "/view/view[3]/view[1]/button[2]/text[2]",
+      "value": null,
+      "childName": "main",
+      "path": "pages/work-detail/work-detail",
+      "text": "姿势裂变",
+      "eventData": {
+        "detail": {
+          "x": 205.13278198242188,
+          "y": 743.6641845703125
+        },
+        "changedTouches": [
+          {
+            "clientX": 205.13278198242188,
+            "clientY": 743.6641845703125,
+            "force": 1,
+            "pageX": 205.13278198242188,
+            "pageY": 743.6641845703125,
+            "screenX": 227,
+            "screenY": 531
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 205.13278198242188,
+            "clientY": 743.6641845703125,
+            "force": 1,
+            "pageX": 205.13278198242188,
+            "pageY": 743.6641845703125,
+            "screenX": 227,
+            "screenY": 531
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[3]/view[1]/button[2]/text[2]"
+      ],
+      "timeStamp": 112940,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchstart",
+      "target": "text.pose-name",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": " 空",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 260.6875,
+            "clientY": 377.0000915527344,
+            "force": 1,
+            "pageX": 260.6875,
+            "pageY": 377.0000915527344,
+            "screenX": 252,
+            "screenY": 366
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 260.6875,
+            "clientY": 377.0000915527344,
+            "force": 1,
+            "pageX": 260.6875,
+            "pageY": 377.0000915527344,
+            "screenX": 252,
+            "screenY": 366
+          }
+        ]
+      },
+      "targetCandidates": [
+        "text.pose-name",
+        ".pose-name",
+        "/view/view[4]/view/view[2]/view[2]/scroll-view/view/view/text[1]"
+      ],
+      "timeStamp": 114179,
+      "waitfor": 1239,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "touchend",
+      "target": "text.pose-name",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": " 空",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 260.6875,
+            "clientY": 377.0000915527344,
+            "pageX": 260.6875,
+            "pageY": 377.0000915527344,
+            "screenX": 252,
+            "screenY": 366
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "text.pose-name",
+        ".pose-name",
+        "/view/view[4]/view/view[2]/view[2]/scroll-view/view/view/text[1]"
+      ],
+      "timeStamp": 114276,
+      "waitfor": 97,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "text",
+      "command": "tap",
+      "target": "text.pose-name",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": " 空",
+      "eventData": {
+        "detail": {
+          "x": 260.6875,
+          "y": 377.0000915527344
+        },
+        "changedTouches": [
+          {
+            "clientX": 260.6875,
+            "clientY": 377.0000915527344,
+            "force": 1,
+            "pageX": 260.6875,
+            "pageY": 377.0000915527344,
+            "screenX": 252,
+            "screenY": 366
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 260.6875,
+            "clientY": 377.0000915527344,
+            "force": 1,
+            "pageX": 260.6875,
+            "pageY": 377.0000915527344,
+            "screenX": 252,
+            "screenY": 366
+          }
+        ]
+      },
+      "targetCandidates": [
+        "text.pose-name",
+        ".pose-name",
+        "/view/view[4]/view/view[2]/view[2]/scroll-view/view/view/text[1]"
+      ],
+      "timeStamp": 114276,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchstart",
+      "target": "button.modal-btn.confirm",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "开始裂变",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 321.8046875,
+            "clientY": 704.7735595703125,
+            "force": 1,
+            "pageX": 321.8046875,
+            "pageY": 704.7735595703125,
+            "screenX": 279.5,
+            "screenY": 513.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 321.8046875,
+            "clientY": 704.7735595703125,
+            "force": 1,
+            "pageX": 321.8046875,
+            "pageY": 704.7735595703125,
+            "screenX": 279.5,
+            "screenY": 513.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.modal-btn.confirm",
+        ".modal-btn.confirm",
+        "/view/view[4]/view/view[3]/button[2]"
+      ],
+      "timeStamp": 114876,
+      "waitfor": 600,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "touchend",
+      "target": "button.modal-btn.confirm",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "开始裂变",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 321.8046875,
+            "clientY": 704.7735595703125,
+            "pageX": 321.8046875,
+            "pageY": 704.7735595703125,
+            "screenX": 279.5,
+            "screenY": 513.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "button.modal-btn.confirm",
+        ".modal-btn.confirm",
+        "/view/view[4]/view/view[3]/button[2]"
+      ],
+      "timeStamp": 114964,
+      "waitfor": 88,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "button",
+      "command": "tap",
+      "target": "button.modal-btn.confirm",
+      "value": null,
+      "path": "pages/work-detail/work-detail",
+      "text": "开始裂变",
+      "eventData": {
+        "detail": {
+          "x": 321.8046875,
+          "y": 704.7735595703125
+        },
+        "changedTouches": [
+          {
+            "clientX": 321.8046875,
+            "clientY": 704.7735595703125,
+            "force": 1,
+            "pageX": 321.8046875,
+            "pageY": 704.7735595703125,
+            "screenX": 279.5,
+            "screenY": 513.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 321.8046875,
+            "clientY": 704.7735595703125,
+            "force": 1,
+            "pageX": 321.8046875,
+            "pageY": 704.7735595703125,
+            "screenX": 279.5,
+            "screenY": 513.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "button.modal-btn.confirm",
+        ".modal-btn.confirm",
+        "/view/view[4]/view/view[3]/button[2]"
+      ],
+      "timeStamp": 114964,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 212.984375,
+            "clientY": 238.10940551757812,
+            "force": 1,
+            "pageX": 212.984375,
+            "pageY": 238.10940551757812,
+            "screenX": 201.5,
+            "screenY": 303.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 212.984375,
+            "clientY": 238.10940551757812,
+            "force": 1,
+            "pageX": 212.984375,
+            "pageY": 238.10940551757812,
+            "screenX": 201.5,
+            "screenY": 303.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 131953,
+      "waitfor": 10000,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 245.00003051757812,
+            "clientY": 715.9444580078125,
+            "force": 1,
+            "pageX": 245.00003051757812,
+            "pageY": 715.9444580078125,
+            "screenX": 216,
+            "screenY": 519
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 245.00003051757812,
+            "clientY": 715.9444580078125,
+            "force": 1,
+            "pageX": 245.00003051757812,
+            "pageY": 715.9444580078125,
+            "screenX": 216,
+            "screenY": 519
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 132291,
+      "waitfor": 338,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 245.00003051757812,
+            "clientY": 715.9444580078125,
+            "pageX": 245.00003051757812,
+            "pageY": 715.9444580078125,
+            "screenX": 216,
+            "screenY": 519
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 132387,
+      "waitfor": 96,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[2]/view[1]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 100.7578125,
+            "clientY": 279.2187805175781,
+            "force": 1,
+            "pageX": 100.7578125,
+            "pageY": 279.2187805175781,
+            "screenX": 151,
+            "screenY": 322
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 100.7578125,
+            "clientY": 279.2187805175781,
+            "force": 1,
+            "pageX": 100.7578125,
+            "pageY": 279.2187805175781,
+            "screenX": 151,
+            "screenY": 322
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]/view[1]"
+      ],
+      "timeStamp": 134329,
+      "waitfor": 1942,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[2]/view[1]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 100.7578125,
+            "clientY": 279.2187805175781,
+            "pageX": 100.7578125,
+            "pageY": 279.2187805175781,
+            "screenX": 151,
+            "screenY": 322
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]/view[1]"
+      ],
+      "timeStamp": 134466,
+      "waitfor": 137,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "tap",
+      "target": "/view/view[2]/view/view[1]/view[2]/view[1]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品",
+      "eventData": {
+        "detail": {
+          "x": 100.7578125,
+          "y": 279.2187805175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 100.7578125,
+            "clientY": 279.2187805175781,
+            "force": 1,
+            "pageX": 100.7578125,
+            "pageY": 279.2187805175781,
+            "screenX": 151,
+            "screenY": 322
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 100.7578125,
+            "clientY": 279.2187805175781,
+            "force": 1,
+            "pageX": 100.7578125,
+            "pageY": 279.2187805175781,
+            "screenX": 151,
+            "screenY": 322
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]/view[1]"
+      ],
+      "timeStamp": 134466,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "timeStamp": 140812,
+      "waitfor": 6346,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "native",
+      "command": "navigateLeft",
+      "text": ""
+    },
+    {
+      "tagName": "image",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 185.20314025878906,
+            "clientY": 193.66409301757812,
+            "force": 1,
+            "pageX": 185.20314025878906,
+            "pageY": 193.66409301757812,
+            "screenX": 189,
+            "screenY": 283.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 185.20314025878906,
+            "clientY": 193.66409301757812,
+            "force": 1,
+            "pageX": 185.20314025878906,
+            "pageY": 193.66409301757812,
+            "screenX": 189,
+            "screenY": 283.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 141412,
+      "waitfor": 600,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchmove",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 172.7777862548828,
+            "clientY": 650.3890380859375,
+            "force": 1,
+            "pageX": 172.7777862548828,
+            "pageY": 650.3890380859375,
+            "screenX": 183.5,
+            "screenY": 489.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 172.7777862548828,
+            "clientY": 650.3890380859375,
+            "force": 1,
+            "pageX": 172.7777862548828,
+            "pageY": 650.3890380859375,
+            "screenX": 183.5,
+            "screenY": 489.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 141762,
+      "waitfor": 350,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "image",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[1]/image",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 172.7777862548828,
+            "clientY": 650.3890380859375,
+            "pageX": 172.7777862548828,
+            "pageY": 650.3890380859375,
+            "screenX": 183.5,
+            "screenY": 489.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[1]/image"
+      ],
+      "timeStamp": 141809,
+      "waitfor": 47,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 301.4375305175781,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 301.4375305175781,
+            "screenX": 158.5,
+            "screenY": 332
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 301.4375305175781,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 301.4375305175781,
+            "screenX": 158.5,
+            "screenY": 332
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 142639,
+      "waitfor": 830,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 301.4375305175781,
+            "pageX": 117.4296875,
+            "pageY": 301.4375305175781,
+            "screenX": 158.5,
+            "screenY": 332
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 142738,
+      "waitfor": 99,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "tap",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {
+          "x": 117.4296875,
+          "y": 301.4375305175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 301.4375305175781,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 301.4375305175781,
+            "screenX": 158.5,
+            "screenY": 332
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 117.4296875,
+            "clientY": 301.4375305175781,
+            "force": 1,
+            "pageX": 117.4296875,
+            "pageY": 301.4375305175781,
+            "screenX": 158.5,
+            "screenY": 332
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 142738,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 666.6666870117188,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 145967,
+      "waitfor": 3229,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 0,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 146564,
+      "waitfor": 597,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 868.5,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 146851,
+      "waitfor": 287,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 0,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 147500,
+      "waitfor": 649,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 868.5,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 148216,
+      "waitfor": 716,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 424.0555419921875,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 148817,
+      "waitfor": 601,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "",
+      "command": "scroll",
+      "target": "/",
+      "path": "pages/work-detail/work-detail",
+      "eventData": {
+        "scrollDetail": {
+          "scrollTop": 0,
+          "scrollLeft": 0
+        }
+      },
+      "targetCandidates": [],
+      "timeStamp": 152306,
+      "waitfor": 3489,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "touchstart",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 265.1327819824219,
+            "clientY": 358.1094055175781,
+            "force": 1,
+            "pageX": 265.1327819824219,
+            "pageY": 358.1094055175781,
+            "screenX": 254,
+            "screenY": 357.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 265.1327819824219,
+            "clientY": 358.1094055175781,
+            "force": 1,
+            "pageX": 265.1327819824219,
+            "pageY": 358.1094055175781,
+            "screenX": 254,
+            "screenY": 357.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 153055,
+      "waitfor": 749,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "touchend",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 265.1327819824219,
+            "clientY": 358.1094055175781,
+            "pageX": 265.1327819824219,
+            "pageY": 358.1094055175781,
+            "screenX": 254,
+            "screenY": 357.5
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 153125,
+      "waitfor": 70,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "tap",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {
+          "x": 265.1327819824219,
+          "y": 358.1094055175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 265.1327819824219,
+            "clientY": 358.1094055175781,
+            "force": 1,
+            "pageX": 265.1327819824219,
+            "pageY": 358.1094055175781,
+            "screenX": 254,
+            "screenY": 357.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 265.1327819824219,
+            "clientY": 358.1094055175781,
+            "force": 1,
+            "pageX": 265.1327819824219,
+            "pageY": 358.1094055175781,
+            "screenX": 254,
+            "screenY": 357.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 153128,
+      "waitfor": 3,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "touchstart",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 215.13278198242188,
+            "clientY": 259.2187805175781,
+            "force": 1,
+            "pageX": 215.13278198242188,
+            "pageY": 259.2187805175781,
+            "screenX": 231.5,
+            "screenY": 313
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 215.13278198242188,
+            "clientY": 259.2187805175781,
+            "force": 1,
+            "pageX": 215.13278198242188,
+            "pageY": 259.2187805175781,
+            "screenX": 231.5,
+            "screenY": 313
+          }
+        ]
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 153995,
+      "waitfor": 867,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "touchend",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 215.13278198242188,
+            "clientY": 259.2187805175781,
+            "pageX": 215.13278198242188,
+            "pageY": 259.2187805175781,
+            "screenX": 231.5,
+            "screenY": 313
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 154102,
+      "waitfor": 107,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "swiper",
+      "command": "tap",
+      "target": "swiper.hero-swiper",
+      "value": 0,
+      "childName": "slideFrame",
+      "path": "pages/work-detail/work-detail",
+      "text": "",
+      "eventData": {
+        "detail": {
+          "x": 215.13278198242188,
+          "y": 259.2187805175781
+        },
+        "changedTouches": [
+          {
+            "clientX": 215.13278198242188,
+            "clientY": 259.2187805175781,
+            "force": 1,
+            "pageX": 215.13278198242188,
+            "pageY": 259.2187805175781,
+            "screenX": 231.5,
+            "screenY": 313
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 215.13278198242188,
+            "clientY": 259.2187805175781,
+            "force": 1,
+            "pageX": 215.13278198242188,
+            "pageY": 259.2187805175781,
+            "screenX": 231.5,
+            "screenY": 313
+          }
+        ]
+      },
+      "targetCandidates": [
+        "swiper.hero-swiper",
+        ".hero-swiper",
+        "/view/view[1]/swiper"
+      ],
+      "timeStamp": 154102,
+      "waitfor": 0,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "timeStamp": 154789,
+      "waitfor": 687,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "native",
+      "command": "navigateLeft",
+      "text": ""
+    },
+    {
+      "tagName": "view",
+      "command": "touchstart",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 202.984375,
+            "clientY": 260.3281555175781,
+            "force": 1,
+            "pageX": 202.984375,
+            "pageY": 260.3281555175781,
+            "screenX": 197,
+            "screenY": 313.5
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 202.984375,
+            "clientY": 260.3281555175781,
+            "force": 1,
+            "pageX": 202.984375,
+            "pageY": 260.3281555175781,
+            "screenX": 197,
+            "screenY": 313.5
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 156021,
+      "waitfor": 1232,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchmove",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 177.22222900390625,
+            "clientY": 707.0555419921875,
+            "force": 1,
+            "pageX": 177.22222900390625,
+            "pageY": 707.0555419921875,
+            "screenX": 185.5,
+            "screenY": 515
+          }
+        ],
+        "touches": [
+          {
+            "clientX": 177.22222900390625,
+            "clientY": 707.0555419921875,
+            "force": 1,
+            "pageX": 177.22222900390625,
+            "pageY": 707.0555419921875,
+            "screenX": 185.5,
+            "screenY": 515
+          }
+        ]
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 156360,
+      "waitfor": 339,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "tagName": "view",
+      "command": "touchend",
+      "target": "/view/view[2]/view/view[1]/view[2]",
+      "value": null,
+      "path": "pages/works/works",
+      "text": "photography作品\n2025-10-05 22:52",
+      "eventData": {
+        "detail": {},
+        "changedTouches": [
+          {
+            "clientX": 177.22222900390625,
+            "clientY": 707.0555419921875,
+            "pageX": 177.22222900390625,
+            "pageY": 707.0555419921875,
+            "screenX": 185.5,
+            "screenY": 515
+          }
+        ],
+        "touches": []
+      },
+      "targetCandidates": [
+        "/view/view[2]/view/view[1]/view[2]"
+      ],
+      "timeStamp": 156381,
+      "waitfor": 21,
+      "desc": "",
+      "commandType": "operate",
+      "layer": "pageframe"
+    },
+    {
+      "timeStamp": 158644,
+      "waitfor": 2263,
+      "desc": "",
+      "layer": "tool",
+      "commandType": "operate",
+      "command": "stopRecord"
+    }
+  ]
+}

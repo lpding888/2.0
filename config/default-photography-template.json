@@ -1,0 +1,29 @@
+{
+  "name": "默认服装摄影模板",
+  "description": "专业服装摄影的标准提示词模板，支持多种变量自定义",
+  "type": "photography",
+  "category": "服装摄影",
+  "template": "A professional fashion photography of {gender|female} model, age {age|25}, {nationality|asian} ethnicity, {skin_tone|medium} skin tone, wearing {clothing_description|fashionable outfit}, {pose_type|dynamic} pose, {lighting_style|professional studio lighting}, in {location|studio} setting with {background|neutral} background, {mood_and_atmosphere|elegant and sophisticated} atmosphere, high fashion, editorial style, 8K resolution, sharp focus, professional photography",
+  "variables": [
+    "gender",
+    "age", 
+    "nationality",
+    "skin_tone",
+    "clothing_description",
+    "pose_type",
+    "lighting_style",
+    "mood_and_atmosphere"
+  ],
+  "default_params": {
+    "gender": "female",
+    "age": 25,
+    "nationality": "asian",
+    "skin_tone": "medium",
+    "clothing_description": "fashionable outfit",
+    "pose_type": "dynamic",
+    "lighting_style": "professional studio lighting",
+    "mood_and_atmosphere": "elegant and sophisticated"
+  },
+  "is_active": true,
+  "priority": 10
+}

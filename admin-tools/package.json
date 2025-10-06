@@ -1,0 +1,17 @@
+{
+  "name": "ai-photographer-admin-tools",
+  "version": "1.0.0",
+  "description": "AI摄影师小程序管理工具",
+  "main": "manage-ai-models.js",
+  "scripts": {
+    "list": "node manage-ai-models.js list",
+    "add-model": "node manage-ai-models.js add",
+    "test-model": "node manage-ai-models.js test"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "keywords": ["ai", "model", "management", "admin"],
+  "author": "AI Photographer Team",
+  "license": "MIT"
+}

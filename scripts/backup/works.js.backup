@@ -1,0 +1,994 @@
+ // 作品页面
+const apiService = require('../../utils/api.js')
+
+// 浅比较函数，用于避免不必要的setData
+function shallowEqual(objA, objB) {
+  if (objA === objB) return true;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+  if (keysA.length !== keysB.length) return false;
+  for (let key of keysA) {
+    if (objA[key] !== objB[key]) return false;
+  }
+  return true;
+}
+
+Page({
+  // 私有字段，用于JS层管理完整数据，避免频繁setData大数组
+  _works: null,
+  _isPageVisible: true,
+  _pollingTimers: new Set(),
+  _activeTaskPolling: new Set(), // 单任务轮询幂等性检查
+  _multiPollingActive: false,    // 多任务轮询幂等性检查
+  _notifiedTasks: new Set(),     // 多任务一次性提醒去重
+
+  /**
+   * 安全的setData包装，包含大小监控和性能优化
+   */
+  setDataSafe(data, callback) {
+    // 开发环境下监控setData大小（使用wx.getAppBaseInfo判断开发环境）
+    try {
+      const appBaseInfo = wx.getAppBaseInfo();
+      if (appBaseInfo && appBaseInfo.host && appBaseInfo.host.env === 'develop') {
+        const dataSize = JSON.stringify(data).length;
+        if (dataSize > 200 * 1024) { // 200KB阈值
+          console.warn('setData数据量过大:', dataSize, 'bytes');
+        }
+      }
+    } catch (e) {
+      // 忽略错误，正常执行setData
+    }
+    return this.setData(data, callback);
+  },
+
+  /**
+   * 安全的进度卡片更新，包含对比和节流
+   */
+  updateProgressCardSafely(newData) {
+    if (shallowEqual(this.data.progressCard, newData)) {
+      return; // 数据无变化，跳过更新
+    }
+    this.setDataSafe({ progressCard: newData });
+  },
+
+  /**
+   * 检查页面是否可见
+   */
+  isPageVisible() {
+    const pages = getCurrentPages();
+    return pages.length > 0 && pages[pages.length - 1].route === 'pages/works/works';
+  },
+
+  /**
+   * 安全的定时器管理
+   */
+  setSafeInterval(callback, interval) {
+    const timer = setInterval(() => {
+      if (this._isPageVisible && this.isPageVisible()) {
+        callback();
+      }
+    }, interval);
+    this._pollingTimers.add(timer);
+    return timer;
+  },
+
+  /**
+   * 清理所有定时器
+   */
+  clearAllTimers() {
+    this._pollingTimers.forEach(timer => {
+      clearInterval(timer);
+      clearTimeout(timer);
+    });
+    this._pollingTimers.clear();
+  },
+  // 工具：时间格式化
+  formatTimestamp(ts) {
+    try {
+      if (!ts) return '';
+      const d = typeof ts === 'number' ? new Date(ts) : new Date(ts._seconds ? ts._seconds * 1000 : ts);
+      const pad = (n) => (n < 10 ? '0' + n : '' + n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch (e) {
+      return '';
+    }
+  },
+
+  // 规范化后端返回的作品数据（兼容 api.listWorks 与旧接口）
+  normalizeWorksData(list) {
+    const fmt = this.formatTimestamp;
+    return (list || []).map((w) => {
+      const id = w._id || w.id || w.work_id;
+      // 新接口：cover_url、created_time、status、type
+      const cover = w.cover_url || w.thumbnail || '';
+      const created = w.created_time || w.create_time || w.createdAt || w.created_at || w.createTime;
+      // 旧接口：images 数组
+      const images = Array.isArray(w.images) ? w.images : [];
+      const normImages = images.map((img) => {
+        if (typeof img === 'string') return { url: img };
+        return {
+          temp_url: img.temp_url || img.thumbnail_url || img.url,
+          url: img.url || img.fileID || img.file_id || img.temp_url
+        };
+      });
+      const thumbnail = cover || (normImages[0] && (normImages[0].temp_url || normImages[0].url)) || '';
+      return {
+        ...w,
+        id,
+        images: normImages,
+        thumbnail,
+        display_time: w.display_time || fmt(created),
+        description_text: (w.description || w.desc || '')
+      };
+    });
+  },
+
+  // 获取当前 tab 的 key
+  getCurrentTabKey() {
+    const t = this.data.tabs[this.data.currentTab];
+    return t ? t.key : 'all';
+  },
+
+  // 优先加载缓存（首屏秒开）
+  loadCacheForCurrentTab() {
+    try {
+      const key = this.getCurrentTabKey();
+      const cache = wx.getStorageSync('works_cache_' + key);
+      if (cache && Array.isArray(cache.list)) {
+        const works = this.normalizeWorksData(cache.list);
+        this.setData({
+          works,
+          isEmpty: works.length === 0,
+          lastRefreshAt: cache.ts || 0,
+          firstLoadDone: true
+        });
+      }
+    } catch (_) {}
+  },
+
+  // 基于提交起点的阶段估算（10分钟四阶段）
+  computeStage(elapsedMs, totalMs = 10 * 60 * 1000) {
+    const clamp = (n) => Math.max(0, Math.min(100, n));
+    const percent = clamp(Math.floor((elapsedMs / totalMs) * 100));
+    let stage = 'planning';
+    let message = '摄影师正在设计拍摄计划…';
+    if (elapsedMs >= 2 * 60 * 1000 && elapsedMs < 6 * 60 * 1000) {
+      stage = 'shooting';
+      message = '摄影师正在拍摄…';
+    } else if (elapsedMs >= 6 * 60 * 1000 && elapsedMs < 9 * 60 * 1000) {
+      stage = 'retouch';
+      message = '摄影师正在修图…';
+    } else if (elapsedMs >= 9 * 60 * 1000 && elapsedMs < 10 * 60 * 1000) {
+      stage = 'uploading';
+      message = '摄影师已完成拍摄，正在上传作品…';
+    }
+    const remainMs = Math.max(0, totalMs - elapsedMs);
+    const mm = String(Math.floor(remainMs / 60000)).padStart(2, '0');
+    const ss = String(Math.floor((remainMs % 60000) / 1000)).padStart(2, '0');
+    const etaText = `约${mm}:${ss}`;
+    return { stage, message, percent, etaText };
+  },
+
+  data: {
+    // 作品数据
+    works: [],
+    loading: false,
+    hasMore: true,
+    // 分页游标
+    last_id: null,
+    pageSize: 12,
+    
+    // 缓存与刷新节流
+    lastRefreshAt: 0,
+    firstLoadDone: false,
+    
+    // 筛选条件
+    currentTab: 0,
+    tabs: [
+      { key: 'all', label: '全部' },
+      { key: 'photography', label: '服装摄影' },
+      { key: 'fitting', label: '试衣间' },
+      { key: 'favorite', label: '我的收藏' }
+    ],
+    
+    // 排序方式
+    sortType: 'create_time', // create_time, favorite_time
+    
+    // 页面状态
+    isEmpty: false,
+    showFilterPanel: false,
+
+    // 进行中卡片（单任务）
+    progressCard: {
+      visible: false,
+      stage: 'planning', // planning | shooting | retouch | uploading | failed
+      message: '',
+      percent: 0,
+      etaText: '',
+      completed: null,
+      total: null
+    },
+
+    // 多任务进行中列表
+    progressList: [], // [{ taskId, startedAt, stage, message, percent, etaText, completed, total, status }]
+    
+    // 轮询节流/计时
+    _pollTick: 0,
+    _taskStartAt: 0,
+    _multiPollTick: 0
+  },
+
+  onLoad(options) {
+    // 首屏优先渲染缓存，减少白屏与抖动
+    this.loadCacheForCurrentTab();
+    // 若带入单个 taskId，加入多任务队列
+    if (options && options.taskId) {
+      console.log(`works.js: onLoad 收到 taskId: ${options.taskId}，加入多任务列表`);
+      this.addPendingTasks([{ taskId: options.taskId, createdAt: Date.now() }], { startPolling: true, hideGlobalLoading: true });
+      return;
+    }
+
+    // 尝试从本地读取 pendingTasks（数组）与 legacy pendingTask（单个），进行合并
+    this.loadPendingTasksFromStorage();
+
+    // 如有进行中任务，启动多任务轮询；否则常规加载列表
+    if (this.data.progressList.length > 0) {
+      this.startMultiPolling();
+    } else {
+      this.loadWorks();
+    }
+  },
+
+  onShow() {
+    this._isPageVisible = true;
+    // 合并本地新增任务
+    this.loadPendingTasksFromStorage();
+
+    if (this.data.progressList.length > 0) {
+      // 有进行中任务：开启/恢复多任务轮询
+      this.startMultiPolling();
+    } else {
+      // 无进行中任务：做节流，避免每次切页都刷新
+      const now = Date.now();
+      const within1min = now - (this.data.lastRefreshAt || 0) < 60 * 1000;
+
+      if (this.data.works.length > 0 && within1min) {
+        // 1分钟内再次进入，不刷新，直接展示
+        return;
+      }
+
+      if (this.data.works.length > 0 && !within1min) {
+        this.refreshWorks();
+      } else {
+        this.loadWorks();
+      }
+    }
+  },
+
+  onHide() {
+    this._isPageVisible = false;
+    // 进入后台时清理所有定时器，避免页面不在前台还继续轮询
+    this.clearAllTimers();
+  },
+
+  onPullDownRefresh() {
+    this.refreshWorks()
+  },
+
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.loading) {
+      this.loadMore()
+    }
+  },
+
+  /**
+   * 加载作品列表
+   */
+  async loadWorks() {
+    if (this.data.loading) return
+    this.setDataSafe({ loading: true })
+
+    try {
+      const tabKey = this.data.tabs[this.data.currentTab]?.key || 'all'
+      const res = await apiService.listWorks({
+        tab: tabKey,
+        onlyCompleted: false,
+        pageSize: this.data.pageSize,
+        last_id: this.data.last_id
+      })
+
+      if (res && res.success) {
+        const rawItems = res.data?.items || []
+        const works = this.normalizeWorksData(rawItems)
+        
+        // 缓存首屏
+        if (!this.data.last_id) {
+          try {
+            wx.setStorageSync('works_cache_' + tabKey, { list: rawItems, ts: Date.now() })
+          } catch (_) {}
+        }
+
+        // 使用增量更新避免concat操作
+        if (this.data.last_id) {
+          // 加载更多：使用keyPath增量追加
+          const baseLength = this.data.works.length
+          const updates = {}
+          works.forEach((item, index) => {
+            updates[`works[${baseLength + index}]`] = item
+          })
+          updates['hasMore'] = !!res.data?.hasMore
+          updates['loading'] = false
+          updates['last_id'] = works.length ? works[works.length - 1].id : null
+          
+          this.setDataSafe(updates)
+          // 维护私有完整数据
+          this._works = [...(this._works || []), ...works]
+        } else {
+          // 首次加载：完整设置
+          this.setDataSafe({
+            works: works,
+            hasMore: !!res.data?.hasMore,
+            loading: false,
+            isEmpty: works.length === 0,
+            lastRefreshAt: Date.now(),
+            firstLoadDone: true,
+            last_id: works.length ? works[works.length - 1].id : null
+          })
+          this._works = works
+        }
+      } else {
+        this.setDataSafe({
+          loading: false,
+          isEmpty: !this.data.last_id
+        })
+      }
+    } catch (error) {
+      console.error('加载作品失败:', error)
+      this.setDataSafe({
+        loading: false,
+        isEmpty: !this.data.last_id
+      })
+    }
+
+    wx.stopPullDownRefresh()
+  },
+
+  /**
+   * 刷新作品列表
+   */
+  async refreshWorks() {
+    this.setData({
+      last_id: null,
+      works: [],
+      hasMore: true,
+      isEmpty: false
+    })
+    await this.loadWorks()
+  },
+
+  /**
+   * 加载更多
+   */
+  async loadMore() {
+    if (this.data.loading || !this.data.hasMore) return
+    await this.loadWorks()
+  },
+
+  /**
+   * 切换标签
+   */
+  switchTab(e) {
+    const index = e.currentTarget.dataset.index
+    if (index === this.data.currentTab) return
+    this.setData({ currentTab: index, last_id: null, works: [], hasMore: true }, () => this.loadWorks())
+  },
+
+  /**
+   * 查看作品详情
+   */
+  viewWork(e) {
+    const workId = e.currentTarget.dataset.id
+    wx.navigateTo({
+      url: `/pages/work-detail/work-detail?id=${workId}`
+    })
+  },
+
+  /**
+   * 长按卡片直接删除
+   */
+  onItemLongPress(e) {
+    const id = e?.currentTarget?.dataset?.id
+    if (!id) return
+    // 复用已有删除逻辑，并提供最小化的 stopPropagation 以避免父级触发
+    this.deleteWork({
+      stopPropagation: () => {},
+      currentTarget: { dataset: { id } }
+    })
+  },
+
+  /**
+   * 预览图片
+   */
+  previewImage(e) {
+    // 阻止冒泡，避免触发父级的跳转
+    if (typeof e.stopPropagation === 'function') e.stopPropagation()
+
+    const { url, workId } = e.currentTarget.dataset
+    const work = this.data.works.find(w => w.id === workId)
+    
+    if (work && work.images && work.images.length > 0) {
+      // 优先使用后端提供的临时 https 链接，避免 cloud:// 在预览/图片组件中无法展示
+      const urls = work.images
+        .map(img => img.temp_url || img.url)
+        .filter(Boolean)
+      // 若传入的 url 不是 https，则使用第一张作为 current
+      const current = (url && /^https?:\/\//.test(url)) ? url : urls[0]
+      
+      wx.previewImage({
+        urls,
+        current
+      })
+    } else {
+      const fallback = /^https?:\/\//.test(url) ? url : ''
+      wx.previewImage({
+        urls: fallback ? [fallback] : [],
+        current: fallback
+      })
+    }
+  },
+
+  /**
+   * 切换收藏状态
+   */
+  async toggleFavorite(e) {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation() // 阻止事件冒泡
+    
+    const workId = e.currentTarget.dataset.id
+    const workIndex = this.data.works.findIndex(w => w.id === workId)
+    
+    if (workIndex === -1) return
+
+    try {
+      const res = await apiService.toggleFavorite(workId)
+      
+      if (res.success) {
+        const works = [...this.data.works]
+        works[workIndex].is_favorite = !works[workIndex].is_favorite
+        
+        // 如果当前在收藏标签页，移除取消收藏的作品
+        if (this.data.tabs[this.data.currentTab].key === 'favorite' && !works[workIndex].is_favorite) {
+          works.splice(workIndex, 1)
+        }
+        
+        this.setData({ works })
+        
+        wx.showToast({
+          title: works[workIndex]?.is_favorite ? '已收藏' : '已取消收藏',
+          icon: 'success',
+          duration: 1500
+        })
+      }
+    } catch (error) {
+      console.error('切换收藏状态失败:', error)
+    }
+  },
+
+  /**
+   * 分享作品
+   */
+  shareWork(e) {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation()
+    
+    const workId = e.currentTarget.dataset.id
+    const work = this.data.works.find(w => w.id === workId)
+    
+    if (!work) return
+
+    // 这里可以实现分享功能
+    wx.showActionSheet({
+      itemList: ['保存到相册', '分享给朋友'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          this.saveToAlbum(work)
+        } else if (res.tapIndex === 1) {
+          // 分享给朋友的逻辑
+          console.log('分享给朋友')
+        }
+      }
+    })
+  },
+
+  /**
+   * 保存到相册
+   */
+  async saveToAlbum(work) {
+    if (!work.images || work.images.length === 0) {
+      wx.showToast({
+        title: '没有可保存的图片',
+        icon: 'none'
+      })
+      return
+    }
+
+    try {
+      // 获取用户授权
+      const authRes = await this.getSaveImageAuth()
+      if (!authRes) return
+
+      wx.showLoading({
+        title: '保存中...',
+        mask: true
+      })
+
+      // 保存第一张图片（优先 https 临时链接）
+      const first = work.images[0] || {}
+      const imageUrl = first.temp_url || first.url
+      if (!imageUrl) {
+        throw new Error('无有效图片地址')
+      }
+
+      // http(s) 走 wx.downloadFile；cloud:// 走 wx.cloud.downloadFile
+      let tempFilePath = ''
+      if (/^https?:\/\//.test(imageUrl)) {
+        const dl = await wx.downloadFile({ url: imageUrl })
+        if (dl.statusCode !== 200) throw new Error('下载失败')
+        tempFilePath = dl.tempFilePath
+      } else {
+        const dl = await wx.cloud.downloadFile({ fileID: imageUrl })
+        tempFilePath = dl.tempFilePath
+      }
+
+      // 保存到相册
+      await wx.saveImageToPhotosAlbum({
+        filePath: tempFilePath
+      })
+
+      wx.hideLoading()
+      wx.showToast({
+        title: '保存成功',
+        icon: 'success'
+      })
+
+    } catch (error) {
+      wx.hideLoading()
+      console.error('保存图片失败:', error)
+      wx.showToast({
+        title: '保存失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * 获取保存图片授权
+   */
+  getSaveImageAuth() {
+    return new Promise((resolve) => {
+      wx.getSetting({
+        success: (res) => {
+          if (res.authSetting['scope.writePhotosAlbum']) {
+            resolve(true)
+          } else {
+            wx.authorize({
+              scope: 'scope.writePhotosAlbum',
+              success: () => resolve(true),
+              fail: () => {
+                wx.showModal({
+                  title: '授权提示',
+                  content: '需要授权保存图片到相册',
+                  confirmText: '去设置',
+                  success: (modalRes) => {
+                    if (modalRes.confirm) {
+                      wx.openSetting()
+                    }
+                    resolve(false)
+                  }
+                })
+              }
+            })
+          }
+        }
+      })
+    })
+  },
+
+  /**
+   * 删除作品（真实删除）
+   */
+  deleteWork(e) {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation()
+    const workId = e.currentTarget.dataset.id
+    if (!workId) return
+
+    wx.showModal({
+      title: '确认删除',
+      content: '删除后无法恢复，确定要删除这个作品吗？',
+      confirmText: '删除',
+      confirmColor: '#d33',
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          wx.showLoading({ title: '删除中...', mask: true })
+          const del = await apiService.deleteWork(workId)
+          wx.hideLoading()
+          if (del && del.success) {
+            const works = this.data.works.filter(w => w.id !== workId)
+            this.setData({ works })
+            wx.showToast({ title: '已删除', icon: 'success' })
+          } else {
+            wx.showToast({ title: del?.message || '删除失败', icon: 'none' })
+          }
+        } catch (error) {
+          try { wx.hideLoading() } catch(_) {}
+          console.error('删除作品失败:', error)
+          wx.showToast({ title: '删除失败', icon: 'none' })
+        }
+      }
+    })
+  },
+
+  /**
+   * 显示筛选面板
+   */
+  showFilter() {
+    this.setData({
+      showFilterPanel: true
+    })
+  },
+
+  /**
+   * 隐藏筛选面板
+   */
+  hideFilter() {
+    this.setData({
+      showFilterPanel: false
+    })
+  },
+
+  /**
+   * 跳转到服装摄影页
+   */
+  goToPhotography() {
+    wx.switchTab({
+      url: '/pages/photography/photography'
+    })
+  },
+
+  /**
+   * 启动任务状态轮询（带幂等性和可见性检查）
+   * @param {string} taskId 任务ID
+   */
+  startTaskPolling(taskId) {
+    // 幂等性检查：避免重复启动
+    if (this._activeTaskPolling.has(taskId)) {
+      console.log('任务轮询已启动，跳过重复启动:', taskId);
+      return;
+    }
+    this._activeTaskPolling.add(taskId);
+
+    // 记录起点（用于阶段估算）
+    try {
+      const pending = wx.getStorageSync('pendingTask')
+      this.data._taskStartAt = (pending && pending.createdAt) ? pending.createdAt : Date.now()
+    } catch (_) {
+      this.data._taskStartAt = Date.now()
+    }
+
+    // 显示进行中卡片；全局loading快速隐藏，改由卡片承载反馈
+    this.updateProgressCardSafely({ ...this.data.progressCard, visible: true });
+    this.loadingHideTimer = setTimeout(() => { try { wx.hideLoading() } catch(e) {} }, 800)
+
+    // 清理旧定时器
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this._pollingTimers.delete(this.pollingTimer);
+    }
+
+    // 使用安全的定时器，带可见性检查
+    this.pollingTimer = this.setSafeInterval(async () => {
+      try {
+        // 1) 前端阶段估算
+        const elapsed = Date.now() - this.data._taskStartAt
+        const est = this.computeStage(elapsed)
+        this.updateProgressCardSafely({ ...this.data.progressCard, ...est, visible: true });
+
+        // 2) 查询后端进度
+        const res = await apiService.getPhotographyProgress(taskId)
+
+        // 3) 部分可见：每两次轮询轻量刷新列表（第一页）
+        this.data._pollTick = (this.data._pollTick + 1) % 2
+        if (this.data._pollTick === 0) {
+          // 避免破坏分页状态：仅在第一页时刷新（未有last_id表示第一页）
+          if (!this.data.last_id) {
+            await this.loadWorks()
+          }
+        }
+
+        if (res && res.success) {
+          const taskStatusRaw = (res && res.data && res.data.status) || ''
+          const taskStatus = String(taskStatusRaw).toLowerCase()
+          const completedNum = res && res.data ? res.data.completed : undefined
+          const totalNum = res && res.data ? res.data.total : undefined
+          const isProgressNumbersValid = typeof completedNum === 'number' && typeof totalNum === 'number' && totalNum > 0
+          const isBackendDone = taskStatus === 'completed' || taskStatus === 'success' || (isProgressNumbersValid && completedNum >= totalNum)
+          const isBackendFailed = taskStatus === 'failed' || taskStatus === 'error'
+
+          // 覆盖显示后端已知的完成进度
+          if (typeof res.data.completed === 'number' && typeof res.data.total === 'number') {
+            const pc = this.data.progressCard
+            const p = res.data.total > 0 ? Math.floor((res.data.completed / res.data.total) * 100) : pc.percent
+            this.updateProgressCardSafely({
+              ...pc,
+              percent: p,
+              completed: res.data.completed,
+              total: res.data.total
+            });
+          }
+          if (typeof res.data.etaSeconds === 'number') {
+            const mm = String(Math.floor(res.data.etaSeconds / 60)).padStart(2, '0')
+            const ss = String(Math.floor(res.data.etaSeconds % 60)).padStart(2, '0')
+            this.updateProgressCardSafely({ ...this.data.progressCard, etaText: `约${mm}:${ss}` });
+          }
+
+          if (isBackendDone) {
+            clearInterval(this.pollingTimer);
+            this._pollingTimers.delete(this.pollingTimer);
+            this._activeTaskPolling.delete(taskId);
+            this.updateProgressCardSafely({ ...this.data.progressCard, visible: false });
+            wx.showToast({ title: '生成完成', icon: 'success' });
+            this.loadWorks();
+          } else if (isBackendFailed) {
+            clearInterval(this.pollingTimer);
+            this._pollingTimers.delete(this.pollingTimer);
+            this._activeTaskPolling.delete(taskId);
+            this.updateProgressCardSafely({
+              ...this.data.progressCard,
+              stage: 'failed',
+              message: '很抱歉，本次任务生成失败，积分将自动退还',
+              percent: 100
+            });
+            try { wx.hideLoading() } catch(e) {}
+            wx.showToast({ title: '生成失败', icon: 'none' });
+            if (typeof apiService.refundPointsByTask === 'function') {
+              apiService.refundPointsByTask(taskId);
+            }
+            setTimeout(() => {
+              try { this.updateProgressCardSafely({ ...this.data.progressCard, visible: false }); } catch(_) {}
+            }, 1000);
+          }
+        } else {
+          // 后端暂时不可用：仅维持前端阶段估算，不中断轮询
+          console.warn('获取任务状态失败(容错继续轮询)');
+        }
+      } catch (error) {
+        console.error('轮询任务状态异常:', error);
+        // 保留卡片，不立刻清除，下一tick继续
+      }
+    }, 5000);
+  },
+
+  /**
+   * 页面卸载时清理所有定时器
+   */
+  onUnload() {
+    this.clearAllTimers();
+    if (this.loadingHideTimer) {
+      clearTimeout(this.loadingHideTimer);
+    }
+  },
+
+  onHide() {
+    this._isPageVisible = false;
+    // 使用统一的定时器清理方法
+    this.clearAllTimers();
+    if (this.loadingHideTimer) {
+      clearTimeout(this.loadingHideTimer);
+    }
+    // 隐藏时保持卡片可见状态（下次onShow会继续）
+  },
+
+  // 排序切换
+  changeSortType(e) {
+    const type = e.currentTarget.dataset.type || 'create_time'
+    if (type === this.data.sortType) return
+    this.setData({ sortType: type }, () => this.refreshWorks())
+  },
+
+  // 重置筛选
+  resetFilter() {
+    this.setData({ sortType: 'create_time' })
+  },
+
+  // 应用筛选
+  applyFilter() {
+    this.setData({ showFilterPanel: false }, () => this.refreshWorks())
+  },
+
+  // 创建菜单（保留占位，可扩展）
+  showCreateMenu() {
+    wx.showActionSheet({
+      itemList: ['去服装摄影', '去试衣间'],
+      success: (res) => {
+        if (res.tapIndex === 0) wx.switchTab({ url: '/pages/photography/photography' })
+        if (res.tapIndex === 1) wx.switchTab({ url: '/pages/fitting/fitting' })
+      }
+    })
+  },
+
+  // 读取并合并本地待处理任务（支持 legacy 单任务 -> 数组）
+  loadPendingTasksFromStorage() {
+    let arr = []
+    try {
+      const pendingArr = wx.getStorageSync('pendingTasks') || []
+      if (Array.isArray(pendingArr)) arr = pendingArr
+    } catch (_) {}
+
+    try {
+      const legacy = wx.getStorageSync('pendingTask')
+      if (legacy && legacy.taskId) {
+        // 迁移 legacy 到数组
+        arr.push({ taskId: legacy.taskId, createdAt: legacy.createdAt || Date.now() })
+        wx.removeStorageSync('pendingTask')
+      }
+    } catch (_) {}
+
+    // 去重（按 taskId）
+    const map = {}
+    const merged = []
+    arr.forEach(it => {
+      if (!it || !it.taskId) return
+      if (!map[it.taskId]) {
+        map[it.taskId] = true
+        merged.push({
+          taskId: it.taskId,
+          startedAt: it.createdAt || Date.now(),
+          stage: 'planning',
+          message: '摄影师正在设计拍摄计划…',
+          percent: 0,
+          etaText: '约10:00',
+          completed: null,
+          total: null,
+          status: 'processing'
+        })
+      }
+    })
+
+    this.setData({ progressList: merged })
+    try { wx.setStorageSync('pendingTasks', merged.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+  },
+
+  // 手动加入待处理任务
+  addPendingTasks(tasks = [], opts = { startPolling: false, hideGlobalLoading: false }) {
+    const list = [...this.data.progressList]
+    const map = Object.fromEntries(list.map(i => [i.taskId, true]))
+    const now = Date.now()
+
+    tasks.forEach(t => {
+      if (!t || !t.taskId || map[t.taskId]) return
+      list.push({
+        taskId: t.taskId,
+        startedAt: t.createdAt || now,
+        stage: 'planning',
+        message: '摄影师正在设计拍摄计划…',
+        percent: 0,
+        etaText: '约10:00',
+        completed: null,
+        total: null,
+        status: 'processing'
+      })
+    })
+
+    this.setData({ progressList: list })
+    try { wx.setStorageSync('pendingTasks', list.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+
+    if (opts.startPolling) {
+      if (!opts.hideGlobalLoading) {
+        wx.showLoading({ title: '正在获取结果...', mask: true })
+        setTimeout(() => { try { wx.hideLoading() } catch(e) {} }, 800)
+      }
+      this.startMultiPolling()
+    }
+  },
+
+  // 取消跟踪某个任务（不影响后端）
+  cancelTrack(e) {
+    const taskId = e?.currentTarget?.dataset?.taskId
+    const list = this.data.progressList.filter(i => i.taskId !== taskId)
+    this.setData({ progressList: list })
+    try { wx.setStorageSync('pendingTasks', list.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+    if (list.length === 0 && this.multiPollingTimer) {
+      clearInterval(this.multiPollingTimer)
+    }
+  },
+
+  // 多任务轮询：统一tick更新所有任务与阶段，并间歇刷新列表
+  startMultiPolling() {
+    if (this.multiPollingTimer) clearInterval(this.multiPollingTimer)
+
+    // 快速隐藏全局loading，改由卡片承载
+    setTimeout(() => { try { wx.hideLoading() } catch(e) {} }, 500)
+
+    this.multiPollingTimer = setInterval(async () => {
+      try {
+        let list = [...this.data.progressList]
+        const tickNow = Date.now()
+
+        // 更新阶段估算（前端10分钟四阶段）
+        list = list.map(item => {
+          const elapsed = Math.max(0, tickNow - (item.startedAt || tickNow))
+          const est = this.computeStage(elapsed)
+          return { ...item, ...est }
+        })
+
+        // 轮询每个任务状态（串行以控资源；任务不多时足够）
+        for (let i = 0; i < list.length; i++) {
+          const t = list[i]
+          try {
+            const res = await apiService.getPhotographyProgress(t.taskId)
+            if (res && res.success) {
+              // 覆盖后端进度
+              const { completed, total, etaSeconds, status } = res.data || {}
+              if (typeof completed === 'number' && typeof total === 'number') {
+                const pct = total > 0 ? Math.floor((completed / total) * 100) : t.percent
+                list[i] = { ...list[i], completed, total, percent: pct }
+              }
+              if (typeof etaSeconds === 'number') {
+                const mm = String(Math.floor(etaSeconds / 60)).padStart(2, '0')
+                const ss = String(Math.floor(etaSeconds % 60)).padStart(2, '0')
+                list[i] = { ...list[i], etaText: `约${mm}:${ss}` }
+              }
+              if (status === 'completed') {
+                list[i] = { ...list[i], status: 'completed' }
+                if (!this._notifiedTasks.has(t.taskId)) {
+                  this._notifiedTasks.add(t.taskId)
+                  wx.showToast({ title: '生成完成', icon: 'success' })
+                }
+              } else if (status === 'failed') {
+                list[i] = { ...list[i], status: 'failed', message: '很抱歉，本次任务生成失败，积分将自动退还' }
+                if (!this._notifiedTasks.has(t.taskId)) {
+                  this._notifiedTasks.add(t.taskId)
+                  wx.showToast({ title: '生成失败', icon: 'none' })
+                }
+                if (typeof apiService.refundPointsByTask === 'function') {
+                  apiService.refundPointsByTask(t.taskId)
+                }
+              } else {
+                list[i] = { ...list[i], status: 'processing' }
+              }
+            }
+          } catch (err) {
+            console.warn('getPhotographyProgress error', err)
+          }
+        }
+
+        // 应用更新
+        this.setData({ progressList: list })
+
+        // 移除已完成/失败的任务（前端停止跟踪，但后端不受影响）
+        const remain = list.filter(i => i.status === 'processing')
+        if (remain.length !== list.length) {
+          this.setData({ progressList: remain })
+          try { wx.setStorageSync('pendingTasks', remain.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+          // 完成有变更时，刷新一次作品列表
+          await this.loadWorks()
+        } else {
+          // 间歇刷新，增强“部分可见”
+          this.data._multiPollTick = (this.data._multiPollTick + 1) % 2
+          if (this.data._multiPollTick === 0 && !this.data.last_id) {
+            await this.loadWorks()
+          }
+        }
+
+        // 若全部结束，停止定时器
+        if (remain.length === 0 && this.multiPollingTimer) {
+          clearInterval(this.multiPollingTimer)
+        }
+      } catch (e) {
+        console.error('multi polling tick error', e)
+      }
+    }, 5000)
+  }
+})
