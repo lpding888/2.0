@@ -25,9 +25,6 @@ async function initDatabase() {
     await initWorksCollection()
     await initAdminUsersCollection()
     await initPackagesCollection()
-
-    // 添加初始数据
-    await addInitialPromptTemplates()
     
     console.log('数据库初始化完成')
     return {
@@ -140,37 +137,13 @@ async function initAdminUsersCollection() {
  */
 async function initPackagesCollection() {
   console.log('初始化packages集合...')
-
+  
   // 检查集合是否存在
   try {
     const result = await db.collection('packages').limit(1).get()
     console.log('packages集合已存在')
   } catch (error) {
     console.log('packages集合将在首次使用时自动创建')
-  }
-}
-
-/**
- * 添加初始提示词模板数据
- */
-async function addInitialPromptTemplates() {
-  console.log('添加初始提示词模板数据...')
-
-  try {
-    // 导入姿势裂变模板添加函数
-    const { addPosePromptTemplates } = require('./add-pose-prompt-templates')
-
-    // 添加姿势裂变模板
-    const result = await addPosePromptTemplates()
-
-    if (result.success) {
-      console.log(`✅ ${result.message}`)
-    } else {
-      console.log(`⚠️ ${result.message}`)
-    }
-
-  } catch (error) {
-    console.log('⚠️ 添加姿势裂变模板失败:', error.message)
   }
 }
 

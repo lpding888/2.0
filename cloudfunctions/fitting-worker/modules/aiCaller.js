@@ -460,7 +460,6 @@ class AICaller {
         has_candidates: !!(responseData.candidates && responseData.candidates.length > 0),
         candidate_count: responseData.candidates ? responseData.candidates.length : 0
       })
-      console.log('📋 完整响应数据:', JSON.stringify(responseData, null, 2))
 
       if (!responseData.candidates || responseData.candidates.length === 0) {
         throw new Error('没有获得AI响应候选')
@@ -484,8 +483,8 @@ class AICaller {
               console.log(`✅ 获得文本响应 (候选${candidateIndex + 1}, 部分${partIndex + 1}): ${part.text.substring(0, 50)}...`)
             }
 
-            // 处理图片部分 - 兼容多种可能的图片字段格式
-            const imageData = part.inlineData || part.inline_data || part.fileData || part.imageData || part.data
+            // 处理图片部分 - 兼容Node.js SDK格式(inlineData)和REST API格式(inline_data)
+            const imageData = part.inlineData || part.inline_data
             if (imageData && imageData.data) {
               const mimeType = imageData.mimeType || imageData.mime_type
               const finalImageData = {
@@ -511,8 +510,7 @@ class AICaller {
               has_text: !!part.text,
               has_inlineData: !!part.inlineData,
               has_inline_data: !!part.inline_data,
-              part_keys: Object.keys(part),
-              full_part: part // 显示完整的part结构
+              part_keys: Object.keys(part)
             })
           })
         }
@@ -829,8 +827,8 @@ class AICaller {
 
           const [, imageFormat, base64Data] = matches
 
-          // 验证base64数据（降低阈值，避免偶尔的验证失败）
-          if (!base64Data || base64Data.length < 10) {
+          // 验证base64数据
+          if (!base64Data || base64Data.length < 100) {
             throw new Error('base64数据无效或过小')
           }
 

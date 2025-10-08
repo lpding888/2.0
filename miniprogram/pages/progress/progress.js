@@ -1,5 +1,6 @@
 // 拍摄进度页面
 const apiService = require('../../utils/api.js')
+const app = getApp()
 
 Page({
   data: {
@@ -28,6 +29,9 @@ Page({
     retryParams: null, // 保存重试所需的参数
     isRetrying: false
   },
+
+  // 页面路径（用于全局轮询管理）
+  pagePath: 'pages/progress/progress',
 
   onLoad(options) {
     const { taskId, workId, type, mode, referenceWorkId, posePresetId, poseDescription } = options
@@ -64,13 +68,35 @@ Page({
       canRetry: mode === 'pose_variation'
     })
 
-    // 开始轮询进度
-    this.startPolling()
+    // 🔄 注册全局轮询（防止重复）
+    const registered = app.registerPolling(taskId, this.pagePath)
+
+    if (registered) {
+      // 开始轮询进度
+      this.startPolling()
+    } else {
+      // 已被其他页面轮询，提示用户并返回
+      wx.showToast({
+        title: '任务正在作品页跟踪',
+        icon: 'none',
+        duration: 2000
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/works/works'
+        })
+      }, 2000)
+    }
   },
 
   onUnload() {
     // 页面卸载时清除定时器
     this.stopPolling()
+
+    // 🔄 注销全局轮询
+    if (this.data.taskId) {
+      app.unregisterPolling(this.data.taskId, this.pagePath)
+    }
   },
 
   /**

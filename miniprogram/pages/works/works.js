@@ -19,6 +19,9 @@ function shallowEqual(objA, objB) {
 }
 
 Page({
+  // 页面路径（用于全局轮询管理）
+  pagePath: 'pages/works/works',
+
   // 私有字段，用于JS层管理完整数据，避免频繁setData大数组
   _works: null,
   _isPageVisible: true,
@@ -1398,9 +1401,28 @@ Page({
   },
 
 
-  // 读取并合并本地待处理任务（支持 legacy 单任务 -> 数组）
+  /**
+   * 读取并合并本地待处理任务（支持 legacy 单任务 -> 数组）
+   * 优化版：优先使用同步的进度状态，确保跨页面一致
+   */
   loadPendingTasksFromStorage() {
     let arr = []
+
+    // 🎯 优先尝试读取同步的进度状态（包含完整进度信息）
+    try {
+      const syncData = wx.getStorageSync('progressList_sync')
+      if (syncData && syncData.list && Array.isArray(syncData.list)) {
+        const age = Date.now() - (syncData.timestamp || 0)
+        // 如果数据不超过30秒，直接使用（确保新鲜度）
+        if (age < 30000) {
+          console.log('📥 从同步存储加载进度状态，数据年龄:', age, 'ms')
+          this.setData({ progressList: syncData.list })
+          return
+        }
+      }
+    } catch (_) {}
+
+    // 兜底：从基础任务列表构建进度状态
     try {
       const pendingArr = wx.getStorageSync('pendingTasks') || []
       if (Array.isArray(pendingArr)) arr = pendingArr
@@ -1445,7 +1467,7 @@ Page({
     })
 
     this.setData({ progressList: merged })
-    try { wx.setStorageSync('pendingTasks', merged.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+    try { wx.setStorageSync('pendingTasks', merged.map(({ taskId, type, startedAt }) => ({ taskId, type, createdAt: startedAt }))) } catch(_) {}
   },
 
   // 手动加入待处理任务（如点击“开始拍摄”时调用）
@@ -1483,23 +1505,109 @@ Page({
     }
   },
 
-  // 取消跟踪某个任务（不影响后端）
+  /**
+   * 取消任务（调用后端取消并退款）
+   */
+  async cancelTask(e) {
+    const taskId = e?.currentTarget?.dataset?.taskId
+    if (!taskId) return
+
+    wx.showModal({
+      title: '确认取消',
+      content: '确定要取消本次任务吗？已扣除的积分将自动退还。',
+      confirmText: '确定取消',
+      cancelText: '继续等待',
+      success: async (res) => {
+        if (!res.confirm) return
+
+        try {
+          wx.showLoading({ title: '正在取消...', mask: true })
+
+          const result = await apiService.callCloudFunction('api', {
+            action: 'cancelTask',
+            task_id: taskId,
+            __noLoading: true
+          })
+
+          wx.hideLoading()
+
+          if (result && result.success) {
+            // 从进度列表中移除
+            const list = this.data.progressList.filter(i => i.taskId !== taskId)
+            this.setDataSafe({ progressList: list })
+
+            // 🔄 注销全局轮询
+            app.unregisterPolling(taskId, this.pagePath)
+
+            try {
+              wx.setStorageSync('pendingTasks', list.map(({ taskId, type, startedAt }) => ({
+                taskId,
+                type,
+                createdAt: startedAt
+              })))
+            } catch(_) {}
+
+            // 如果没有剩余任务，停止轮询
+            if (list.length === 0 && this.multiPollingTimer) {
+              clearInterval(this.multiPollingTimer)
+              this._multiPollingActive = false
+            }
+
+            wx.showToast({
+              title: result.message || '已取消任务',
+              icon: 'success',
+              duration: 2000
+            })
+
+            // 刷新作品列表
+            setTimeout(() => {
+              this.refreshWorks()
+            }, 800)
+          } else {
+            wx.showToast({
+              title: result?.message || '取消失败',
+              icon: 'none',
+              duration: 2000
+            })
+          }
+        } catch (error) {
+          wx.hideLoading()
+          console.error('取消任务失败:', error)
+          wx.showToast({
+            title: '取消失败，请稍后重试',
+            icon: 'none',
+            duration: 2000
+          })
+        }
+      }
+    })
+  },
+
+  /**
+   * 取消跟踪某个任务（仅前端移除，不影响后端）
+   * @deprecated 建议使用 cancelTask 真正取消任务
+   */
   cancelTrack(e) {
     const taskId = e?.currentTarget?.dataset?.taskId
     const list = this.data.progressList.filter(i => i.taskId !== taskId)
-    this.setData({ progressList: list })
-    try { wx.setStorageSync('pendingTasks', list.map(({ taskId, startedAt }) => ({ taskId, createdAt: startedAt }))) } catch(_) {}
+    this.setDataSafe({ progressList: list })
+    try { wx.setStorageSync('pendingTasks', list.map(({ taskId, type, startedAt }) => ({ taskId, type, createdAt: startedAt }))) } catch(_) {}
     if (list.length === 0 && this.multiPollingTimer) {
       clearInterval(this.multiPollingTimer)
+      this._multiPollingActive = false
     }
   },
 
   /**
    * 🚀 性能优化：智能计算轮询间隔（根据任务运行时间动态调整）
    * 节约60%云函数调用，减少服务器压力
+   *
+   * 🎯 优化策略（V2）：
+   * 配合 realtime listener（实时监听），轮询作为兜底机制
+   * 延长轮询间隔，减少不必要的云函数调用
    */
   getSmartPollingInterval(tasks) {
-    if (!tasks || tasks.length === 0) return 5000
+    if (!tasks || tasks.length === 0) return 10000
 
     // 计算最长运行时间
     const now = Date.now()
@@ -1507,34 +1615,61 @@ Page({
       now - (t.startedAt || now)
     ))
 
-    // 🎯 动态间隔策略：
-    // 前2分钟（用户焦虑期）：3秒 - 快速反馈
-    // 2-5分钟（正常等待期）：5秒 - 平衡体验和资源
-    // 5分钟后（习惯等待期）：10秒 - 节约资源
+    // 🎯 优化后的动态间隔策略：
+    // 前2分钟（用户焦虑期）：10秒 - realtime为主，轮询兜底
+    // 2-5分钟（正常等待期）：20秒 - 进一步降低频率
+    // 5分钟后（习惯等待期）：30秒 - 最大程度节约资源
     if (maxElapsed < 2 * 60 * 1000) {
-      return 3000  // 前2分钟：3秒
+      return 10000  // 前2分钟：10秒（原3秒）
     } else if (maxElapsed < 5 * 60 * 1000) {
-      return 5000  // 2-5分钟：5秒
+      return 20000  // 2-5分钟：20秒（原5秒）
     } else {
-      return 10000 // 5分钟后：10秒
+      return 30000  // 5分钟后：30秒（原10秒）
     }
   },
 
-  // 多任务轮询：统一tick更新所有任务与阶段，并间歇刷新列表
+  /**
+   * 🚀 多任务轮询：统一tick更新所有任务与阶段，并间歇刷新列表
+   * 优化版：增强与realtime listener的协作，确保状态同步
+   */
   startMultiPolling() {
     // 防止重复启动轮询
     if (this._multiPollingActive) {
-      console.log('多任务轮询已在运行，跳过重复启动')
+      console.log('✋ 多任务轮询已在运行，跳过重复启动')
       return
     }
 
     // 防止轮询刚完成就立即重启
     if (this._justCompletedPolling) {
-      console.log('多任务轮询刚完成，暂时跳过重新启动')
+      console.log('⏱️ 多任务轮询刚完成，暂时跳过重新启动')
       return
     }
 
-    console.log('🚀 多任务轮询：开始启动（智能间隔模式），当前进行中任务数量:', this.data.progressList.length)
+    // 🔄 过滤掉已被其他页面轮询的任务，并注册当前页面的任务
+    const validTasks = []
+    this.data.progressList.forEach(task => {
+      if (app.isPolling(task.taskId)) {
+        console.log(`⚠️ 任务 ${task.taskId} 已在其他页面轮询，跳过`)
+      } else {
+        // 注册到全局轮询管理器
+        if (app.registerPolling(task.taskId, this.pagePath)) {
+          validTasks.push(task)
+        }
+      }
+    })
+
+    // 如果没有可轮询的任务，直接返回
+    if (validTasks.length === 0) {
+      console.log('⚠️ 没有可轮询的任务，停止启动')
+      return
+    }
+
+    // 更新有效任务列表
+    if (validTasks.length !== this.data.progressList.length) {
+      this.setDataSafe({ progressList: validTasks })
+    }
+
+    console.log(`🚀 多任务轮询：开始启动（智能间隔模式），有效任务数: ${validTasks.length}/${this.data.progressList.length}`)
 
     // 清理旧的定时器
     if (this.multiPollingTimer) {
@@ -1666,10 +1801,24 @@ Page({
         // 只在数据真正变化时才更新
         if (!this.isProgressListEqual(this.data.progressList, uniqueList)) {
           this.setDataSafe({ progressList: uniqueList })
+
+          // 🎯 同步进度到本地存储，让不同页面能共享进度状态
+          try {
+            wx.setStorageSync('progressList_sync', {
+              list: uniqueList,
+              timestamp: Date.now()
+            })
+          } catch(_) {}
         }
 
         // 移除已完成/失败的任务（前端停止跟踪，但后端不受影响）
         const remain = uniqueList.filter(i => i.status === 'processing')
+
+        // 🔄 注销已完成/失败任务的全局轮询
+        const removedTasks = uniqueList.filter(i => i.status !== 'processing')
+        removedTasks.forEach(task => {
+          app.unregisterPolling(task.taskId, this.pagePath)
+        })
 
         // 若全部结束，立即停止定时器并清理状态
         if (remain.length === 0) {
@@ -2097,6 +2246,7 @@ Page({
 
   /**
    * 更新列表中的作品
+   * 优化版：同时更新 progressList 中对应任务的状态
    */
   async updateWorkInList(work) {
     const works = this.data.works
@@ -2134,6 +2284,11 @@ Page({
           this._works = works
           console.log(`✅ 已将完成的作品移到顶部: ${work._id}`)
         }
+
+        // 🎯 从 progressList 中移除对应的任务（已完成）
+        if (work.task_id) {
+          this.removeTaskFromProgressList(work.task_id)
+        }
       } else {
         // 🔄 普通更新：原地更新
         works[index] = {
@@ -2145,9 +2300,83 @@ Page({
         this.setDataSafe({ works })
         this._works = works
         console.log(`✅ 已更新作品: ${work._id}`)
+
+        // 🎯 同步更新 progressList 中的任务状态
+        if (work.task_id) {
+          this.syncTaskProgressFromWork(work)
+        }
       }
     } else {
       console.log(`⚠️ 作品不在当前列表: ${work._id}`)
+    }
+  },
+
+  /**
+   * 从 progressList 中移除任务
+   */
+  removeTaskFromProgressList(taskId) {
+    const progressList = this.data.progressList.filter(t => t.taskId !== taskId)
+    if (progressList.length !== this.data.progressList.length) {
+      this.setDataSafe({ progressList })
+
+      // 🔄 注销全局轮询
+      app.unregisterPolling(taskId, this.pagePath)
+
+      // 同步到存储
+      try {
+        wx.setStorageSync('progressList_sync', {
+          list: progressList,
+          timestamp: Date.now()
+        })
+        wx.setStorageSync('pendingTasks', progressList.map(({ taskId, type, startedAt }) => ({
+          taskId,
+          type,
+          createdAt: startedAt
+        })))
+      } catch(_) {}
+
+      console.log(`🗑️ 从进度列表移除任务: ${taskId}`)
+    }
+  },
+
+  /**
+   * 从作品数据同步任务进度到 progressList
+   */
+  syncTaskProgressFromWork(work) {
+    const progressList = [...this.data.progressList]
+    const taskIndex = progressList.findIndex(t => t.taskId === work.task_id)
+
+    if (taskIndex !== -1) {
+      const task = progressList[taskIndex]
+
+      // 更新任务状态
+      const updates = {}
+      if (work.status) {
+        updates.status = work.status
+      }
+      if (work.progress !== undefined) {
+        updates.percent = Math.round(work.progress)
+      }
+      if (work.batch_meta) {
+        updates.completed = work.batch_meta.batch_received
+        updates.total = work.batch_meta.batch_expected
+      }
+
+      // 如果有更新，应用到列表
+      if (Object.keys(updates).length > 0) {
+        progressList[taskIndex] = { ...task, ...updates }
+        this.setDataSafe({ progressList })
+
+        // 同步到存储
+        try {
+          wx.setStorageSync('progressList_sync', {
+            list: progressList,
+            timestamp: Date.now()
+          })
+        } catch(_) {}
+
+        console.log(`🔄 同步任务进度: ${work.task_id}`, updates)
+      }
     }
   },
 
@@ -2191,6 +2420,13 @@ Page({
    */
   onUnload() {
     console.log('📱 开始页面内存清理...')
+
+    // 🔄 注销所有全局轮询任务
+    if (this.data.progressList && this.data.progressList.length > 0) {
+      this.data.progressList.forEach(task => {
+        app.unregisterPolling(task.taskId, this.pagePath)
+      })
+    }
 
     // 清理所有定时器（使用wx.clearInterval）
     this.clearAllTimers()

@@ -827,8 +827,8 @@ class AICaller {
 
           const [, imageFormat, base64Data] = matches
 
-          // 验证base64数据（降低阈值，避免偶尔的验证失败）
-          if (!base64Data || base64Data.length < 10) {
+          // 验证base64数据
+          if (!base64Data || base64Data.length < 100) {
             throw new Error('base64数据无效或过小')
           }
 

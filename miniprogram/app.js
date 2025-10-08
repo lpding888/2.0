@@ -52,7 +52,80 @@ App({
     isRefreshingUserInfo: false, // 全局刷新状态控制
     lastRefreshTime: 0, // 上次刷新时间戳
     imageHandler: imageHandler, // 全局图片处理工具
-    isDev: false // 是否开发环境
+    isDev: false, // 是否开发环境
+
+    // 🔄 全局轮询状态管理（防止重复轮询）
+    pollingTasks: new Set(), // 正在轮询的任务ID集合
+    pollingOwners: new Map() // 任务ID -> 页面路径映射
+  },
+
+  /**
+   * 🔄 注册任务轮询（防止重复）
+   * @param {string} taskId - 任务ID
+   * @param {string} pagePath - 页面路径（如 pages/progress/progress）
+   * @returns {boolean} - 是否成功注册（false表示已被其他页面轮询）
+   */
+  registerPolling(taskId, pagePath) {
+    if (this.globalData.pollingTasks.has(taskId)) {
+      const owner = this.globalData.pollingOwners.get(taskId)
+      console.log(`⚠️ 任务 ${taskId} 已在 ${owner} 页面轮询，跳过重复注册`)
+      return false
+    }
+
+    this.globalData.pollingTasks.add(taskId)
+    this.globalData.pollingOwners.set(taskId, pagePath)
+    console.log(`✅ 任务 ${taskId} 注册轮询：${pagePath}`)
+    return true
+  },
+
+  /**
+   * 🔄 注销任务轮询
+   * @param {string} taskId - 任务ID
+   * @param {string} pagePath - 页面路径
+   */
+  unregisterPolling(taskId, pagePath) {
+    const owner = this.globalData.pollingOwners.get(taskId)
+
+    // 只有注册者才能注销
+    if (owner === pagePath) {
+      this.globalData.pollingTasks.delete(taskId)
+      this.globalData.pollingOwners.delete(taskId)
+      console.log(`✅ 任务 ${taskId} 注销轮询：${pagePath}`)
+    } else {
+      console.log(`⚠️ 任务 ${taskId} 不属于 ${pagePath}，无法注销（当前拥有者：${owner}）`)
+    }
+  },
+
+  /**
+   * 🔄 检查任务是否正在被轮询
+   * @param {string} taskId - 任务ID
+   * @returns {boolean}
+   */
+  isPolling(taskId) {
+    return this.globalData.pollingTasks.has(taskId)
+  },
+
+  /**
+   * 🔄 清理页面的所有轮询任务
+   * @param {string} pagePath - 页面路径
+   */
+  clearPagePolling(pagePath) {
+    const tasksToRemove = []
+
+    this.globalData.pollingOwners.forEach((owner, taskId) => {
+      if (owner === pagePath) {
+        tasksToRemove.push(taskId)
+      }
+    })
+
+    tasksToRemove.forEach(taskId => {
+      this.globalData.pollingTasks.delete(taskId)
+      this.globalData.pollingOwners.delete(taskId)
+    })
+
+    if (tasksToRemove.length > 0) {
+      console.log(`🧹 清理 ${pagePath} 的 ${tasksToRemove.length} 个轮询任务`)
+    }
   },
 
   /**

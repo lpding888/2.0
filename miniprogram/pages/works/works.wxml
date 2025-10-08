@@ -19,7 +19,7 @@
           <text class="bar-percent">{{item.percent}}%</text>
         </view>
         <view class="progress-actions">
-          <button class="mini-btn" size="mini" plain="true" data-task-id="{{item.taskId}}" bindtap="cancelTrack">取消跟踪</button>
+          <button class="mini-btn" size="mini" plain="true" data-task-id="{{item.taskId}}" bindtap="cancelTask">取消任务</button>
         </view>
       </view>
     </block>
