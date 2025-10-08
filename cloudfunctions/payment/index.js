@@ -1368,9 +1368,9 @@ async function getCreditRecords(event, wxContext) {
 
     // 根据筛选条件调整查询
     if (filter === 'earn') {
-      query.type = db.command.in(['daily_sign', 'recharge', 'refund', 'admin_adjust', 'invite_reward', 'system_gift', 'signup_bonus', 'daily_bonus'])
+      query.type = db.command.in(['daily_sign', 'recharge', 'refund', 'admin_adjust', 'invite_reward', 'system_gift', 'signup_bonus', 'daily_bonus', 'share_reward', 'admin_add'])
     } else if (filter === 'spend') {
-      query.type = db.command.in(['photography', 'fitting', 'generation', 'consume', 'photography_generate', 'fitting_generate', 'ai_generation', 'work_generation'])
+      query.type = db.command.in(['photography', 'fitting', 'generation', 'consume', 'photography_generate', 'fitting_generate', 'ai_generation', 'work_generation', 'admin_deduct'])
     }
 
     // 添加分页条件
@@ -1423,7 +1423,7 @@ async function getCreditSummary(event, wxContext) {
     const earnResult = await db.collection('credit_records')
       .where({
         user_openid: OPENID,
-        type: db.command.in(['daily_sign', 'recharge', 'refund', 'admin_adjust', 'invite_reward', 'system_gift', 'signup_bonus', 'daily_bonus'])
+        type: db.command.in(['daily_sign', 'recharge', 'refund', 'admin_adjust', 'invite_reward', 'system_gift', 'signup_bonus', 'daily_bonus', 'share_reward', 'admin_add'])
       })
       .get()
 

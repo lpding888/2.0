@@ -153,7 +153,21 @@ Page({
     const amount = record.amount || 0;
     const type = record.type || '';
 
-    if (type.includes('earn') || type.includes('sign') || type.includes('recharge') || type.includes('refund')) {
+    // 收入类型列表
+    const earnTypes = ['daily_sign', 'recharge', 'refund', 'admin_adjust', 'admin_add', 'invite_reward', 'share_reward', 'system_gift', 'signup_bonus', 'daily_bonus'];
+
+    // 支出类型列表
+    const spendTypes = ['photography', 'fitting', 'generation', 'consume', 'photography_generate', 'fitting_generate', 'ai_generation', 'work_generation', 'admin_deduct'];
+
+    // 精确匹配
+    if (earnTypes.includes(type)) {
+      return `+${amount}`;
+    } else if (spendTypes.includes(type)) {
+      return `-${amount}`;
+    }
+
+    // 模糊匹配（兼容未来可能的新类型）
+    if (type.includes('earn') || type.includes('sign') || type.includes('recharge') || type.includes('refund') || type.includes('reward') || type.includes('bonus') || type.includes('gift') || type.includes('add')) {
       return `+${amount}`;
     } else {
       return `-${amount}`;
@@ -170,7 +184,9 @@ Page({
       'recharge': '积分充值',
       'refund': '消费退款',
       'admin_adjust': '管理员调整',
+      'admin_add': '管理员增加',
       'invite_reward': '邀请奖励',
+      'share_reward': '分享奖励',
       'system_gift': '系统赠送',
       'signup_bonus': '注册奖励',
       'daily_bonus': '每日奖励',
@@ -184,6 +200,7 @@ Page({
       'fitting_generate': '试衣生成',
       'ai_generation': 'AI创作',
       'work_generation': '作品生成',
+      'admin_deduct': '管理员扣除',
 
       // 其他类型
       'transfer': '积分转账',
@@ -224,7 +241,9 @@ Page({
       'recharge': '💳',
       'refund': '↩️',
       'admin_adjust': '⚙️',
+      'admin_add': '➕',
       'invite_reward': '🎁',
+      'share_reward': '🔗',
       'system_gift': '🎉',
       'signup_bonus': '🎊',
       'daily_bonus': '🌟',
@@ -238,6 +257,7 @@ Page({
       'fitting_generate': '👕',
       'ai_generation': '🎨',
       'work_generation': '✨',
+      'admin_deduct': '➖',
 
       // 其他类型
       'transfer': '🔄',
