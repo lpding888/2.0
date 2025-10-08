@@ -332,8 +332,8 @@ async function handleInviteReward(inviteCode, newUserOpenId) {
         .doc(inviter._id)
         .update({
           data: {
-            credits: db.command.inc(10),
-            total_earned_credits: db.command.inc(10),
+            credits: db.command.inc(5),
+            total_earned_credits: db.command.inc(5),
             updated_at: new Date()
           }
         })
@@ -342,9 +342,9 @@ async function handleInviteReward(inviteCode, newUserOpenId) {
       await addCreditRecord({
         user_openid: inviter.openid,
         type: 'invite_reward',
-        amount: 10,
+        amount: 5,
         description: '邀请好友注册奖励',
-        balance_after: (inviter.credits || 0) + 10
+        balance_after: (inviter.credits || 0) + 5
       })
 
       // 记录邀请记录
@@ -352,7 +352,7 @@ async function handleInviteReward(inviteCode, newUserOpenId) {
         data: {
           inviter_openid: inviter.openid,
           invitee_openid: newUserOpenId,
-          reward_credits: 10,
+          reward_credits: 5,
           created_at: new Date()
         }
       })
