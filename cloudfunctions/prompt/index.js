@@ -62,25 +62,82 @@ async function generatePrompt(event) {
       }
     }
 
-    // 🎭 姿势裂变模式：使用特殊提示词
-    if (mode === 'pose_variation' && pose_description) {
-      console.log('🎭 姿势裂变模式，生成特殊提示词')
-      const poseVariationPrompt = generatePoseVariationPrompt(pose_description, sceneInfo, parameters)
+    // 🎭 姿势裂变模式：从数据库查询提示词模板
+    if (mode === 'pose_variation') {
+      console.log('🎭 姿势裂变模式，查询专用提示词模板')
+
+      // 构建姿势裂变模板查询条件（兼容布尔值和字符串）
+      let poseQuery = {
+        type: 'pose_variation',
+        is_active: db.command.in([true, 'true', 1, '1'])
+      }
+
+      // 如果指定了分类，添加分类筛选
+      if (category) {
+        poseQuery.category = category
+      }
+
+      console.log('🎭 姿势裂变查询条件:', poseQuery)
+
+      // 查询姿势裂变模板
+      const poseTemplatesRes = await db.collection('prompt_templates')
+        .where(poseQuery)
+        .orderBy('priority', 'desc')
+        .limit(1)
+        .get()
+
+      console.log('🎭 姿势裂变查询结果:', poseTemplatesRes.data.length, '个模板')
+
+      if (!poseTemplatesRes.data || poseTemplatesRes.data.length === 0) {
+        console.warn('⚠️ 未找到姿势裂变提示词模板，使用内置默认模板')
+        // 如果没有找到模板，使用简单的默认提示词
+        const defaultPrompt = `保持图片的主体不变，根据用户要求调整姿势：${pose_description || '设计新的展示姿势'}。拍摄地点：${sceneInfo.name || parameters.location || ''}。请生成专业的服装摄影作品。`
+        return {
+          success: true,
+          data: {
+            prompt: defaultPrompt,
+            template_id: 'pose_variation_default',
+            template_category: 'pose_variation'
+          },
+          message: '姿势裂变提示词生成成功（使用默认模板）'
+        }
+      }
+
+      const poseTemplate = poseTemplatesRes.data[0]
+      console.log('🎭 选择的姿势裂变模板:', poseTemplate.name, 'ID:', poseTemplate._id)
+
+      // 将姿势描述添加到参数中，用于模板变量替换
+      const poseParams = {
+        ...parameters,
+        pose_description: pose_description
+      }
+
+      // 替换模板变量生成最终提示词
+      const finalPosePrompt = replaceTemplateVariables(
+        poseTemplate.template,
+        poseParams,
+        sceneInfo,
+        poseTemplate.default_params
+      )
+
+      console.log('🎭 姿势裂变最终提示词长度:', finalPosePrompt.length)
+      console.log('🎭 姿势裂变最终提示词预览:', finalPosePrompt.substring(0, 200) + '...')
+
       return {
         success: true,
         data: {
-          prompt: poseVariationPrompt,
-          template_id: 'pose_variation_builtin',
-          template_category: 'pose_variation'
+          prompt: finalPosePrompt,
+          template_id: poseTemplate._id,
+          template_category: poseTemplate.category
         },
         message: '姿势裂变提示词生成成功'
       }
     }
 
-    // 1. 构建查询条件
+    // 1. 构建查询条件（兼容布尔值和字符串）
     let query = {
       type: type,
-      is_active: true
+      is_active: db.command.in([true, 'true', 1, '1'])
     }
 
     // 如果指定了分类，添加分类筛选
@@ -562,22 +619,3 @@ function generateFittingPrompt(parameters, sceneInfo) {
  * @param {Object} sceneInfo - 场景信息
  * @param {Object} parameters - 用户参数（用于获取location）
  */
-function generatePoseVariationPrompt(poseDescription, sceneInfo = {}, parameters = {}) {
-  console.log('🎭 生成姿势裂变提示词')
-  console.log('🎭 姿势描述:', poseDescription)
-  console.log('🎭 场景信息:', sceneInfo)
-  console.log('🎭 参数信息:', parameters)
-
-  // 拍摄地点
-  let locationText = sceneInfo.name || parameters.location || ''
-
-  // 用户动作
-  let actionText = poseDescription || ''
-
-  // 构建提示词（完全按照用户原文 + 明确要求生成图片）
-  let prompt = `保持图片的主体不变，如果用户输入动作为空 你就以服装摄影师的身份设计出下一个展示服装的动作和角度  如果用户有输入动作，严格按照用户输入的动作指导继续拍摄  拍摄地点是${locationText} 用户输入动作${actionText}  输出图片输出给用户，作为摄影师想说什么就说什么吧`
-
-  console.log('🎭 生成的提示词:', prompt)
-
-  return prompt
-}
