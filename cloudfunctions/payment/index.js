@@ -46,6 +46,10 @@ exports.main = async (event, context) => {
         return await createOrder(event, wxContext)
       case 'dailyCheckin':
         return await dailyCheckin(event, wxContext)
+      case 'getSignInState':
+        return await getSignInState(event, wxContext)
+      case 'shareReward':
+        return await shareReward(event, wxContext)
       case 'listRechargeRecords':
         return await listRechargeRecords(event, wxContext)
       case 'listConsumeRecords':
@@ -335,13 +339,13 @@ async function dailyCheckin(event, wxContext) {
 
     // 计算签到奖励（连续签到有额外奖励）
     const consecutiveDays = await getConsecutiveCheckinDays(OPENID)
-    let rewardCredits = 5 // 基础奖励
+    let rewardCredits = 1 // 基础奖励
 
     // 连续签到奖励
     if (consecutiveDays >= 7) {
-      rewardCredits = 10 // 连续7天奖励翻倍
+      rewardCredits = 2 // 连续7天奖励翻倍
     } else if (consecutiveDays >= 3) {
-      rewardCredits = 7 // 连续3天额外奖励
+      rewardCredits = 1 // 连续3天保持基础奖励
     }
 
     // 记录签到
@@ -389,6 +393,171 @@ async function dailyCheckin(event, wxContext) {
     return {
       success: false,
       message: '签到失败'
+    }
+  }
+}
+
+/**
+ * 获取签到状态
+ */
+async function getSignInState(event, wxContext) {
+  const { OPENID } = wxContext
+
+  if (!OPENID) {
+    return {
+      success: false,
+      message: '用户未登录'
+    }
+  }
+
+  try {
+    // 检查今天是否已签到
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const checkinResult = await db.collection('daily_checkins')
+      .where({
+        user_openid: OPENID,
+        checkin_date: db.command.gte(today).and(db.command.lt(tomorrow))
+      })
+      .get()
+
+    const signed = checkinResult.data.length > 0
+
+    // 获取连续签到天数
+    let consecutiveDays = 0
+    if (signed) {
+      consecutiveDays = checkinResult.data[0].consecutive_days || 1
+    } else {
+      consecutiveDays = await getConsecutiveCheckinDays(OPENID)
+    }
+
+    return {
+      success: true,
+      data: {
+        signed: signed,
+        consecutive_days: consecutiveDays
+      },
+      message: '获取签到状态成功'
+    }
+
+  } catch (error) {
+    console.error('获取签到状态失败:', error)
+    return {
+      success: false,
+      message: '获取签到状态失败'
+    }
+  }
+}
+
+/**
+ * 分享奖励
+ */
+async function shareReward(event, wxContext) {
+  const { OPENID } = wxContext
+
+  if (!OPENID) {
+    return {
+      success: false,
+      message: '用户未登录'
+    }
+  }
+
+  try {
+    // 获取用户信息
+    const userResult = await db.collection('users')
+      .where({ openid: OPENID })
+      .get()
+
+    if (userResult.data.length === 0) {
+      return {
+        success: false,
+        message: '用户不存在'
+      }
+    }
+
+    const user = userResult.data[0]
+
+    // 检查今天的分享次数（每天最多奖励3次）
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const shareResult = await db.collection('share_records')
+      .where({
+        user_openid: OPENID,
+        created_at: db.command.gte(today).and(db.command.lt(tomorrow))
+      })
+      .get()
+
+    const todayShareCount = shareResult.data.length
+    const maxDailyShares = 3 // 每天最多3次分享奖励
+
+    if (todayShareCount >= maxDailyShares) {
+      return {
+        success: false,
+        message: `今日分享次数已达上限（${maxDailyShares}次）`,
+        data: {
+          today_count: todayShareCount,
+          max_count: maxDailyShares
+        }
+      }
+    }
+
+    // 分享奖励积分
+    const rewardCredits = 2
+
+    // 记录分享
+    await db.collection('share_records').add({
+      data: {
+        user_openid: OPENID,
+        reward_credits: rewardCredits,
+        created_at: new Date(),
+        share_count: todayShareCount + 1
+      }
+    })
+
+    // 增加用户积分
+    await db.collection('users')
+      .doc(user._id)
+      .update({
+        data: {
+          credits: db.command.inc(rewardCredits),
+          total_earned_credits: db.command.inc(rewardCredits),
+          updated_at: new Date()
+        }
+      })
+
+    // 记录积分变动
+    await addCreditRecord({
+      user_openid: OPENID,
+      type: 'share_reward',
+      amount: rewardCredits,
+      description: `分享奖励（今日第${todayShareCount + 1}次）`,
+      balance_after: user.credits + rewardCredits
+    })
+
+    return {
+      success: true,
+      data: {
+        reward_credits: rewardCredits,
+        today_count: todayShareCount + 1,
+        remaining_count: maxDailyShares - todayShareCount - 1,
+        new_credits: user.credits + rewardCredits
+      },
+      message: `分享成功，获得${rewardCredits}积分！今日还可获得${maxDailyShares - todayShareCount - 1}次分享奖励`
+    }
+
+  } catch (error) {
+    console.error('分享奖励失败:', error)
+    return {
+      success: false,
+      message: '分享奖励失败'
     }
   }
 }

@@ -837,6 +837,25 @@ class ApiService {
   }
 
   /**
+   * 获取签到状态
+   */
+  async getSignInState() {
+    return await this.callCloudFunction('payment', {
+      action: 'getSignInState',
+      __noLoading: true
+    })
+  }
+
+  /**
+   * 分享奖励
+   */
+  async shareReward() {
+    return await this.callCloudFunction('payment', {
+      action: 'shareReward'
+    })
+  }
+
+  /**
    * 创建充值订单
    */
   async createRechargeOrder({ packageId }) {

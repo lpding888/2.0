@@ -223,15 +223,15 @@ Page({
   },
 
   /**
-   * 每日签到：成功后积分+1并刷新用户信息
+   * 每日签到：成功后积分+1并刷新用户信息（连续7天可获得2积分）
    */
   async handleSignIn() {
     if (this.data.signing || this.data.signInToday) return;
     this.setData({ signing: true });
     try {
       let ok = false;
-      if (typeof apiService.dailySignIn === 'function') {
-        const res = await apiService.dailySignIn();
+      if (typeof apiService.dailyCheckin === 'function') {
+        const res = await apiService.dailyCheckin();
         ok = !!(res && res.success);
       } else {
         ok = true; // 无后端时允许本地打点
@@ -245,7 +245,7 @@ Page({
         // 刷新积分
         if (typeof app.refreshUserInfo === 'function') {
           const info = await app.refreshUserInfo();
-          if (info) this.setData({ userInfo: info });
+          if (info) this.setData({ userInfo: normalizeUserInfo(info) });
         }
       } else {
         wx.showToast({ title: '签到失败', icon: 'none' });
@@ -325,6 +325,64 @@ Page({
       path: '/pages/index/index' + (uid ? ('?ref=' + encodeURIComponent(uid)) : ''),
       imageUrl: '/images/logo.png'
     };
+  },
+
+  /**
+   * 分享赚积分
+   */
+  async shareForReward() {
+    // 检查用户是否登录
+    if (!this.data.userInfo) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 触发分享
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+
+    // 调用系统分享
+    wx.shareAppMessage({
+      title: 'AI摄影师｜送你体验积分，一起玩转服装摄影与智能试衣',
+      path: '/pages/index/index?ref=' + encodeURIComponent(this.data.userInfo.user_id || this.data.userInfo._id || ''),
+      imageUrl: '/images/logo.png',
+      success: async () => {
+        console.log('分享成功，准备领取奖励');
+        // 分享成功后，调用云函数领取奖励
+        try {
+          const result = await apiService.shareReward();
+          if (result.success) {
+            wx.showToast({
+              title: result.message || '分享成功，获得积分',
+              icon: 'success',
+              duration: 2000
+            });
+            // 刷新用户信息
+            await this.refreshProfile();
+          } else {
+            wx.showToast({
+              title: result.message || '今日分享次数已用完',
+              icon: 'none',
+              duration: 2000
+            });
+          }
+        } catch (error) {
+          console.error('领取分享奖励失败:', error);
+          wx.showToast({
+            title: '领取奖励失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (error) => {
+        console.log('分享失败或取消', error);
+      }
+    });
   },
 
   /**

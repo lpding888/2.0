@@ -282,27 +282,27 @@ async function dailyCheckin(event, wxContext) {
       data: {
         user_openid: OPENID,
         checkin_date: new Date(),
-        reward_credits: 5
+        reward_credits: 1
       }
     })
-    
+
     // 增加用户积分
     await db.collection('users')
       .where({ openid: OPENID })
       .update({
         data: {
-          credits: db.command.inc(5),
-          total_earned_credits: db.command.inc(5),
+          credits: db.command.inc(1),
+          total_earned_credits: db.command.inc(1),
           updated_at: new Date()
         }
       })
-    
+
     return {
       success: true,
       data: {
-        reward_credits: 5
+        reward_credits: 1
       },
-      message: '签到成功，获得5积分'
+      message: '签到成功，获得1积分'
     }
     
   } catch (error) {

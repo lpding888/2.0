@@ -79,11 +79,16 @@
       </view>
     </view>
 
-    <!-- 邀请好友 -->
+    <!-- 每日任务 -->
     <view class="card">
-      <view class="card-title">邀请好友</view>
-      <view class="card-body">
-        <button class="btn btn-outline" open-type="share">生成邀请链接（成功注册 +2）</button>
+      <view class="card-title">每日任务</view>
+      <view class="card-body task-list">
+        <button class="btn btn-accent" bindtap="shareForReward">
+          分享赚积分 +2（每天3次）
+        </button>
+        <button class="btn btn-outline" open-type="share">
+          邀请好友注册 +10
+        </button>
       </view>
     </view>
 
