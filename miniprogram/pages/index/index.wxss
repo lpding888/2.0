@@ -239,7 +239,7 @@
 }
 
 .primary-card {
-  background: linear-gradient(135deg, #465C88 0%, #2F3E63 100%);
+  background: linear-gradient(135deg, #FF7A30 0%, #FF9A5C 100%);
   color: white;
 }
 
@@ -250,7 +250,7 @@
 }
 
 .secondary-card {
-  background: linear-gradient(135deg, #FF7A30 0%, #FF9A5C 100%);
+  background: linear-gradient(135deg, #465C88 0%, #2F3E63 100%);
   color: white;
 }
 
@@ -338,6 +338,33 @@
 .login-icon {
   margin-right: 12rpx;
   font-size: 24rpx;
+}
+
+/* 游客体验提示 */
+.guest-experience {
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.experience-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.experience-text text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.experience-hint {
+  font-size: 24rpx !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* 底部装饰 */

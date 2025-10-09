@@ -31,6 +31,32 @@ exports.main = async (event, context) => {
  * 处理摄影任务的核心逻辑
  */
 async function processPhotographyTask(taskId, event, wxContext) {
+  // 🚨 设置整体超时控制，确保在云函数被强制终止前更新状态
+  let timeoutTriggered = false
+  const overallTimeout = setTimeout(async () => {
+    timeoutTriggered = true
+    console.error('⏰ 任务处理超时(55秒)，主动更新状态为失败')
+    try {
+      await db.collection('task_queue').doc(taskId).update({
+        data: {
+          status: 'failed',
+          error: '任务处理超时(55秒)，可能是AI服务响应缓慢',
+          updated_at: new Date()
+        }
+      })
+      await db.collection('works').where({ task_id: taskId }).update({
+        data: {
+          status: 'failed',
+          error: '任务处理超时',
+          updated_at: new Date()
+        }
+      })
+      console.log('✅ 超时状态更新完成')
+    } catch (updateError) {
+      console.error('❌ 超时状态更新失败:', updateError)
+    }
+  }, 55000) // 55秒后触发，留5秒给云函数清理
+
   try {
     console.log('📸 processPhotographyTask 开始执行, taskId:', taskId)
 
@@ -79,7 +105,7 @@ async function processPhotographyTask(taskId, event, wxContext) {
       console.log('📍 无场景信息')
     }
 
-    // 2. 处理用户上传的服装图片 - 支持base64预处理模式
+    // 2. 处理用户上传的服装图片
     let processedImages = []
     let imagePromptText = ''
     if (event.images && event.images.length > 0) {
@@ -92,36 +118,33 @@ async function processPhotographyTask(taskId, event, wxContext) {
           console.log(`📥 处理第${i+1}张图片: ${fileId}`)
 
           try {
-            // 尝试从云存储直接读取base64数据（新模式）
+            // 从云存储读取图片数据
             let base64Data = null
             let mimeType = 'image/jpeg'
-            let isBase64Mode = false
 
             try {
               const downloadResult = await cloud.downloadFile({
                 fileID: fileId
               })
 
-              // 检查是否为base64格式存储
+              // 检测文件格式
               const fileContent = downloadResult.fileContent.toString('utf8')
               if (fileContent.startsWith('data:image/')) {
-                // 新模式：直接是base64格式
+                // 文件已是base64格式
                 const matches = fileContent.match(/^data:image\/([^;]+);base64,(.+)$/)
                 if (matches) {
                   mimeType = `image/${matches[1]}`
                   base64Data = matches[2]
-                  isBase64Mode = true
-                  console.log(`✅ 第${i+1}张图片使用base64预处理模式，大小: ${Math.round(base64Data.length/1024)}KB`)
+                  console.log(`✅ 第${i+1}张图片读取完成，大小: ${Math.round(base64Data.length/1024)}KB`)
                 }
               } else {
-                // 传统模式：二进制文件，需要转换
+                // 二进制文件，转换为base64
                 base64Data = downloadResult.fileContent.toString('base64')
-                isBase64Mode = false
-                console.log(`🔄 第${i+1}张图片使用传统模式转换，大小: ${Math.round(base64Data.length/1024)}KB`)
+                console.log(`🔄 第${i+1}张图片转换完成，大小: ${Math.round(base64Data.length/1024)}KB`)
               }
             } catch (downloadError) {
-              console.warn(`❌ 直接下载失败，回退到临时URL模式: ${downloadError.message}`)
-              // 回退到临时URL模式
+              console.warn(`❌ 直接下载失败，尝试临时URL: ${downloadError.message}`)
+              // 使用临时URL下载
               const tempUrlResult = await cloud.getTempFileURL({
                 fileList: [fileId]
               })
@@ -154,7 +177,6 @@ async function processPhotographyTask(taskId, event, wxContext) {
               base64Data: base64Data,
               mimeType: mimeType,
               size: base64Data.length,
-              mode: isBase64Mode ? 'base64_preprocessed' : 'traditional_converted',
               sizeKB: Math.round(base64Data.length / 1024)
             })
 
@@ -350,31 +372,43 @@ async function processPhotographyTask(taskId, event, wxContext) {
 
     console.log('🎉 photography-worker完成: ' + taskId)
 
+    // 清理超时定时器
+    clearTimeout(overallTimeout)
+
   } catch (error) {
     console.error('摄影任务处理失败:', error)
 
-    // 更新任务状态为失败
-    try {
-      await db.collection('task_queue')
-        .doc(taskId)
-        .update({
-          data: {
-            status: 'failed',
-            error: error.message,
-            updated_at: new Date()
-          }
-        })
+    // 清理超时定时器
+    clearTimeout(overallTimeout)
 
-      await db.collection('works')
-        .where({ task_id: taskId })
-        .update({
-          data: {
-            status: 'failed',
-            updated_at: new Date()
-          }
-        })
-    } catch (updateError) {
-      console.error('更新失败状态失败:', updateError)
+    // 更新任务状态为失败（如果超时未触发）
+    if (!timeoutTriggered) {
+      try {
+        await db.collection('task_queue')
+          .doc(taskId)
+          .update({
+            data: {
+              status: 'failed',
+              error: error.message,
+              updated_at: new Date()
+            }
+          })
+
+        await db.collection('works')
+          .where({ task_id: taskId })
+          .update({
+            data: {
+              status: 'failed',
+              error: error.message,
+              updated_at: new Date()
+            }
+          })
+        console.log('✅ 错误状态更新完成')
+      } catch (updateError) {
+        console.error('❌ 更新失败状态失败:', updateError)
+      }
+    } else {
+      console.log('⚠️ 超时已触发，跳过错误状态更新')
     }
 
     throw error

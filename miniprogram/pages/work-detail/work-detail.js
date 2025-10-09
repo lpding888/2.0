@@ -2,6 +2,7 @@
 const apiService = require('../../utils/api.js')
 const WatermarkUtil = require('../../utils/watermark.js')
 const PosterGenerator = require('../../utils/poster.js')
+const aiAssistant = require('../../utils/aiAssistant.js')
 const app = getApp()
 
 Page({
@@ -245,7 +246,7 @@ Page({
 
     // 🎭 姿势裂变相关
     showPoseModal: false,
-    poseMode: 'preset',  // 'preset' | 'custom'
+    poseMode: 'preset',  // 'preset' | 'custom' | 'ai'
     posePresets: [],
     loadingPoses: false,
     selectedPoseId: '',
@@ -253,6 +254,13 @@ Page({
     customPoseDescription: '',
     canConfirm: false,
     comparisonMode: 'split', // split, overlay, toggle
+
+    // AI姿势裂变
+    aiGeneratedPoses: [],
+    aiLoading: false,
+    selectedAIPose: '',
+    aiLoadingTip: '正在分析场景氛围...',
+    aiLoadingTipIndex: 0,
 
     // 新UI展开状态
     showParams: false,
@@ -290,6 +298,11 @@ Page({
       path: `/pages/work-detail/work-detail?id=${this.data.workId}`,
       imageUrl: work.images && work.images.length > 0 ? work.images[0].url : ''
     }
+  },
+
+  onUnload() {
+    // 🎨 清理加载提示定时器，防止内存泄漏
+    this.stopLoadingTips()
   },
 
   /**
@@ -1490,15 +1503,83 @@ Page({
     // 显示弹窗
     this.setData({
       showPoseModal: true,
-      poseMode: 'preset',
+      poseMode: 'ai', // 默认使用AI模式
       selectedPoseId: '',
       selectedPoseName: '',
       customPoseDescription: '',
+      aiGeneratedPoses: [],
+      selectedAIPose: '',
       canConfirm: false
     })
 
     // 加载姿势预设
     this.loadPosePresets()
+
+    // ✨ 智能加载姿势数据（支持继承）
+    await this.loadPoseVariationsWithInheritance()
+  },
+
+  /**
+   * 智能加载姿势裂变数据（支持从引用作品继承）
+   */
+  async loadPoseVariationsWithInheritance() {
+    const work = this.data.work
+
+    // 1. 优先使用当前作品的姿势数据
+    if (work.ai_pose_variations && work.ai_pose_variations.length > 0) {
+      console.log('🎭 使用当前作品的姿势裂变数据:', work.ai_pose_variations.length, '个')
+      this.setData({
+        aiGeneratedPoses: work.ai_pose_variations,
+        aiLoading: false
+      })
+      return
+    }
+
+    // 2. 如果是姿势裂变作品，尝试从原作品继承
+    if (work.reference_work_id) {
+      console.log('🔗 检测到引用作品ID:', work.reference_work_id)
+      try {
+        const refWork = await apiService.getWorkDetail(work.reference_work_id)
+
+        if (refWork.success && refWork.data.ai_pose_variations && refWork.data.ai_pose_variations.length > 0) {
+          console.log('🎭 从引用作品继承姿势数据:', refWork.data.ai_pose_variations.length, '个')
+
+          // 继承姿势数据
+          const inheritedPoses = refWork.data.ai_pose_variations
+
+          this.setData({
+            aiGeneratedPoses: inheritedPoses,
+            aiLoading: false
+          })
+
+          // 💾 保存到当前作品，避免下次重复查询
+          await this.savePoseVariations(inheritedPoses)
+
+          return
+        } else {
+          console.log('⚠️ 引用作品没有姿势数据')
+        }
+      } catch (error) {
+        console.error('❌ 读取引用作品失败:', error)
+        // 继续执行生成逻辑
+      }
+    }
+
+    // 3. 如果都没有，基于手札生成新姿势
+    if (work.ai_description) {
+      console.log('🎭 没有可用姿势数据，基于手札生成...')
+      this.generateAIPoseVariations()
+    } else {
+      // 没有手札，无法生成
+      this.setData({
+        aiGeneratedPoses: [],
+        aiLoading: false
+      })
+      wx.showToast({
+        title: '暂无摄影师手札',
+        icon: 'none'
+      })
+    }
   },
 
   /**
@@ -1549,6 +1630,7 @@ Page({
       selectedPoseId: '',
       selectedPoseName: '',
       customPoseDescription: '',
+      selectedAIPose: '',
       canConfirm: false
     })
   },
@@ -1580,10 +1662,152 @@ Page({
   },
 
   /**
+   * 生成AI姿势建议（基于摄影师手札）
+   */
+  async generateAIPoseVariations() {
+    const work = this.data.work
+
+    // 检查是否有摄影师手札
+    if (!work || !work.ai_description) {
+      wx.showToast({
+        title: '暂无摄影师手札',
+        icon: 'none'
+      })
+      return
+    }
+
+    this.setData({ aiLoading: true })
+
+    // 🎨 启动加载提示轮播
+    this.startLoadingTips()
+
+    try {
+      console.log('🎭 基于摄影师手札生成9个姿势建议')
+      console.log('📝 手札内容:', work.ai_description.substring(0, 100) + '...')
+
+      // 调用AI基于摄影师手札生成9个姿势
+      const poses = await aiAssistant.generatePoseFromPhotographerNotes(work.ai_description, 9)
+
+      // 🎨 停止加载提示轮播
+      this.stopLoadingTips()
+
+      this.setData({
+        aiGeneratedPoses: poses,
+        aiLoading: false
+      })
+
+      console.log(`✅ 成功生成${poses.length}个姿势建议`)
+
+      if (poses.length === 0) {
+        wx.showToast({
+          title: 'AI生成结果为空',
+          icon: 'none'
+        })
+        return
+      }
+
+      // ✨ 保存到数据库，下次直接读取
+      await this.savePoseVariations(poses)
+
+    } catch (error) {
+      console.error('🎭 AI姿势生成失败:', error)
+
+      // 🎨 停止加载提示轮播
+      this.stopLoadingTips()
+
+      this.setData({ aiLoading: false })
+      wx.showToast({
+        title: error.message || 'AI生成失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * 启动加载提示轮播
+   */
+  startLoadingTips() {
+    const tips = [
+      '正在分析场景氛围...',
+      '正在设计动作变化...',
+      '正在优化拍摄角度...',
+      '正在调整姿态细节...',
+      '正在参考时尚风格...',
+      '正在生成创意方案...'
+    ]
+
+    // 初始化第一条提示
+    this.setData({
+      aiLoadingTip: tips[0],
+      aiLoadingTipIndex: 0
+    })
+
+    // 每5秒切换一次提示
+    this.loadingTipTimer = setInterval(() => {
+      const nextIndex = (this.data.aiLoadingTipIndex + 1) % tips.length
+      this.setData({
+        aiLoadingTip: tips[nextIndex],
+        aiLoadingTipIndex: nextIndex
+      })
+    }, 5000)
+  },
+
+  /**
+   * 停止加载提示轮播
+   */
+  stopLoadingTips() {
+    if (this.loadingTipTimer) {
+      clearInterval(this.loadingTipTimer)
+      this.loadingTipTimer = null
+    }
+  },
+
+  /**
+   * 保存姿势裂变数据到数据库
+   */
+  async savePoseVariations(poses) {
+    try {
+      console.log('💾 保存姿势裂变数据到数据库...')
+
+      const res = await apiService.updateWork(this.data.workId, {
+        ai_pose_variations: poses,
+        pose_variations_created_at: new Date()
+      })
+
+      if (res.success) {
+        console.log('✅ 姿势裂变数据保存成功')
+
+        // 更新本地work数据
+        const updatedWork = { ...this.data.work }
+        updatedWork.ai_pose_variations = poses
+        updatedWork.pose_variations_created_at = new Date()
+
+        this.setData({ work: updatedWork })
+      } else {
+        console.warn('⚠️ 姿势裂变数据保存失败:', res.message)
+      }
+    } catch (error) {
+      console.error('❌ 保存姿势裂变数据失败:', error)
+      // 保存失败不影响用户使用，静默处理
+    }
+  },
+
+  /**
+   * 选择AI生成的姿势
+   */
+  selectAIPose(e) {
+    const pose = e.currentTarget.dataset.pose
+    this.setData({
+      selectedAIPose: pose,
+      canConfirm: true
+    })
+  },
+
+  /**
    * 确认姿势裂变
    */
   async confirmPoseVariation() {
-    const { work, poseMode, selectedPoseId, customPoseDescription } = this.data
+    const { work, poseMode, selectedPoseId, customPoseDescription, selectedAIPose } = this.data
 
     // 验证参数
     let posePresetId = null
@@ -1601,6 +1825,12 @@ Page({
         return
       }
       poseDescription = customPoseDescription.trim()
+    } else if (poseMode === 'ai') {
+      if (!selectedAIPose) {
+        wx.showToast({ title: '请选择一个AI姿势', icon: 'none' })
+        return
+      }
+      poseDescription = selectedAIPose
     }
 
     // 关闭弹窗

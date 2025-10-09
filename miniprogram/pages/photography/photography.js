@@ -2,6 +2,7 @@
 const apiService = require('../../utils/api.js')
 const uploadService = require('../../utils/upload.js')
 const imageHandler = require('../../utils/image-handler.js')
+const aiAssistant = require('../../utils/aiAssistant.js')
 
 Page({
   data: {
@@ -10,8 +11,6 @@ Page({
     maxClothingImages: 3,
     // 用户积分（可为空表示未知）
     userCredits: null,
-    // 预计消耗
-    estimatedCost: 1,
 
     // 页面加载骨架
     loading: true,
@@ -81,7 +80,20 @@ Page({
     // 预设管理
     showPresetModal: false,
     presets: [],
-    newPresetName: ''
+    newPresetName: '',
+
+    // AI助手相关
+    showAIHelper: false,
+    activeAITab: 'pose', // pose | prompt | scene
+    aiLoading: false,
+    aiGeneratedPoses: [],
+    aiPoseVariations: [],
+    userPromptInput: '',
+    optimizedPrompt: '',
+    aiSceneRecommendations: [],
+    selectedAIPose: '',
+    poseStyleOptions: ['自然随性', '优雅知性', '活力阳光', '高冷气质', '商务专业'],
+    selectedPoseStyle: '自然随性'
   },
 
   async onLoad(options) {
@@ -452,21 +464,30 @@ Page({
   },
 
   /**
-   * 生成数量改变
-   */
-  onCountChange(e) {
-    const value = parseInt(e.detail.value) || 1
-    const count = Math.max(1, Math.min(5, value))
-    this.setData({
-      generateCount: count,
-      estimatedCost: count
-    })
-  },
-
-  /**
-   * 开始生成
+   * 开始生成 - 支持游客提示登录
    */
   async startGenerate() {
+    // 检查用户是否登录
+    const app = getApp()
+    if (!app.globalData.userInfo) {
+      // 游客体验时，友好提示登录
+      wx.showModal({
+        title: '开始创作',
+        content: '请先登录体验AI摄影功能，免费生成您的专属作品',
+        confirmText: '立即登录',
+        cancelText: '再看看',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到首页登录
+            wx.switchTab({
+              url: '/pages/index/index'
+            })
+          }
+        }
+      })
+      return
+    }
+
     // 验证必需参数
     if (this.data.clothingImages.length === 0) {
       wx.showToast({
@@ -852,5 +873,263 @@ Page({
         }
       }
     })
+  },
+
+  // ==================== AI助手功能 ====================
+
+  /**
+   * 打开AI助手弹窗
+   */
+  openAIHelper() {
+    this.setData({
+      showAIHelper: true,
+      activeAITab: 'pose'
+    })
+  },
+
+  /**
+   * 关闭AI助手弹窗
+   */
+  closeAIHelper() {
+    this.setData({ showAIHelper: false })
+  },
+
+  /**
+   * 切换AI助手Tab
+   */
+  switchAITab(e) {
+    const tab = e.currentTarget.dataset.tab
+    this.setData({ activeAITab: tab })
+  },
+
+  /**
+   * 姿势风格选择
+   */
+  onPoseStyleChange(e) {
+    const index = parseInt(e.detail.value)
+    this.setData({
+      selectedPoseStyle: this.data.poseStyleOptions[index]
+    })
+  },
+
+  /**
+   * 生成姿势建议
+   */
+  async generatePoses() {
+    // 检查是否选择了场景
+    const sceneType = this.data.selectedScene ? this.data.selectedScene.name : (this.data.customSceneText || '通用场景')
+    const clothingStyle = this.data.parameters.outfit_description || '休闲装'
+    const gender = this.data.parameters.gender || 'female'
+
+    this.setData({ aiLoading: true })
+
+    try {
+      const poses = await aiAssistant.generatePosePrompts(sceneType, clothingStyle, gender)
+
+      this.setData({
+        aiGeneratedPoses: poses,
+        aiLoading: false
+      })
+
+      if (poses.length === 0) {
+        wx.showToast({
+          title: 'AI生成结果为空',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('生成姿势失败:', error)
+      this.setData({ aiLoading: false })
+      wx.showToast({
+        title: error.message || 'AI生成失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * 选择姿势并应用
+   */
+  selectAIPose(e) {
+    const pose = e.currentTarget.dataset.pose
+    this.setData({
+      'parameters.pose_type': pose,
+      selectedAIPose: pose
+    })
+    wx.showToast({
+      title: '姿势已应用',
+      icon: 'success'
+    })
+  },
+
+  /**
+   * 姿势裂变 - 生成变体
+   */
+  async generatePoseVariations() {
+    const basePose = this.data.selectedAIPose || this.data.parameters.pose_type
+
+    if (!basePose) {
+      wx.showToast({
+        title: '请先选择一个基础姿势',
+        icon: 'none'
+      })
+      return
+    }
+
+    this.setData({ aiLoading: true })
+
+    try {
+      const variations = await aiAssistant.generatePoseVariations(basePose, 5)
+
+      this.setData({
+        aiPoseVariations: variations,
+        aiLoading: false
+      })
+    } catch (error) {
+      console.error('生成姿势变体失败:', error)
+      this.setData({ aiLoading: false })
+      wx.showToast({
+        title: error.message || 'AI生成失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * Prompt输入
+   */
+  onPromptInput(e) {
+    this.setData({
+      userPromptInput: e.detail.value
+    })
+  },
+
+  /**
+   * 优化Prompt
+   */
+  async optimizePrompt() {
+    const userInput = this.data.userPromptInput.trim()
+
+    if (!userInput) {
+      wx.showToast({
+        title: '请输入您的描述',
+        icon: 'none'
+      })
+      return
+    }
+
+    const sceneInfo = this.data.selectedScene ? this.data.selectedScene.name : (this.data.customSceneText || '')
+
+    this.setData({ aiLoading: true })
+
+    try {
+      const optimized = await aiAssistant.optimizeUserPrompt(userInput, sceneInfo, this.data.parameters)
+
+      this.setData({
+        optimizedPrompt: optimized,
+        aiLoading: false
+      })
+    } catch (error) {
+      console.error('优化Prompt失败:', error)
+      this.setData({ aiLoading: false })
+      wx.showToast({
+        title: error.message || 'AI优化失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * 使用优化后的Prompt
+   */
+  useOptimizedPrompt() {
+    if (!this.data.optimizedPrompt) {
+      wx.showToast({
+        title: '请先优化Prompt',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 将优化后的prompt应用到相关字段
+    this.setData({
+      'parameters.outfit_description': this.data.optimizedPrompt,
+      showAIHelper: false
+    })
+
+    wx.showToast({
+      title: 'Prompt已应用',
+      icon: 'success'
+    })
+  },
+
+  /**
+   * 推荐场景
+   */
+  async recommendScenes() {
+    const clothingDesc = this.data.parameters.outfit_description || '服装'
+    const clothingType = this.data.parameters.clothing_material || ''
+
+    if (!clothingDesc || clothingDesc === '服装') {
+      wx.showToast({
+        title: '请先描述服装',
+        icon: 'none'
+      })
+      return
+    }
+
+    this.setData({ aiLoading: true })
+
+    try {
+      const recommendations = await aiAssistant.recommendScenes(clothingDesc, clothingType)
+
+      this.setData({
+        aiSceneRecommendations: recommendations,
+        aiLoading: false
+      })
+    } catch (error) {
+      console.error('推荐场景失败:', error)
+      this.setData({ aiLoading: false })
+      wx.showToast({
+        title: error.message || 'AI推荐失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  /**
+   * 应用AI推荐的场景
+   */
+  applyAIScene(e) {
+    const recommendation = e.currentTarget.dataset.scene
+
+    // 从推荐文本中提取场景名称（格式：场景名称 - 推荐理由）
+    const sceneName = recommendation.split('-')[0].trim()
+
+    // 在scenes列表中查找匹配的场景
+    const matchedScene = this.data.scenes.find(s =>
+      s.name && s.name.includes(sceneName)
+    )
+
+    if (matchedScene) {
+      this.setData({
+        selectedScene: matchedScene,
+        selectedSceneId: matchedScene._id || matchedScene.id
+      })
+      wx.showToast({
+        title: '场景已应用',
+        icon: 'success'
+      })
+    } else {
+      // 如果没有匹配的场景，使用自定义场景
+      this.setData({
+        customSceneText: sceneName,
+        'parameters.location': sceneName
+      })
+      wx.showToast({
+        title: '已设置为自定义场景',
+        icon: 'success'
+      })
+    }
   }
 })

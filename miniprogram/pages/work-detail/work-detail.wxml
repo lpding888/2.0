@@ -224,8 +224,8 @@
         </button>
 
         <button class="action-btn highlight btn-enhanced btn-shine" bindtap="showPoseVariationModal">
-          <text class="iconfont">🎭</text>
-          <text>换个角度再拍</text>
+          <text class="iconfont icon-camera"></text>
+          <text>换个姿势再拍</text>
         </button>
 
         <button class="action-btn secondary btn-enhanced btn-ripple" bindtap="saveToAlbum">
@@ -287,23 +287,31 @@
       </view>
     </view>
 
-    <!-- 🎭 姿势裂变弹窗 -->
+    <!-- 姿势裂变弹窗 -->
     <view class="pose-variation-modal" wx:if="{{showPoseModal}}" bindtap="closePoseModal">
       <view class="modal-content" catchtap="stopPropagation">
         <view class="modal-header">
-          <text class="modal-title">🎭 换个角度再拍</text>
-          <text class="modal-subtitle">告诉摄影师你想要什么角度</text>
+          <text class="modal-title">换个姿势再拍</text>
+          <text class="modal-subtitle">告诉摄影师你想要的姿势或动作</text>
         </view>
 
         <view class="modal-body">
           <!-- 模式选择 -->
           <view class="mode-selector">
             <view
+              class="mode-option {{poseMode === 'ai' ? 'active' : ''}}"
+              bindtap="selectPoseMode"
+              data-mode="ai"
+            >
+              <text class="mode-icon">🤖</text>
+              <text class="mode-name">AI裂变</text>
+            </view>
+            <view
               class="mode-option {{poseMode === 'preset' ? 'active' : ''}}"
               bindtap="selectPoseMode"
               data-mode="preset"
             >
-              <text class="mode-icon">📋</text>
+              <text class="mode-icon">☑</text>
               <text class="mode-name">选择姿势</text>
             </view>
             <view
@@ -311,8 +319,71 @@
               bindtap="selectPoseMode"
               data-mode="custom"
             >
-              <text class="mode-icon">✏️</text>
+              <text class="mode-icon">✎</text>
               <text class="mode-name">自定义</text>
+            </view>
+          </view>
+
+          <!-- AI姿势裂变 -->
+          <view class="ai-pose-variation" wx:if="{{poseMode === 'ai'}}">
+            <view class="ai-intro">
+              <text class="intro-icon">💡</text>
+              <text class="intro-text">基于第一次生成的描述，AI为您智能生成姿势变体</text>
+            </view>
+
+            <!-- AI生成动画（30秒） -->
+            <view wx:if="{{aiLoading}}" class="ai-generating-animation">
+              <view class="animation-content">
+                <!-- 旋转相机图标 -->
+                <view class="camera-icon rotating">
+                  <text class="icon">📸</text>
+                </view>
+
+                <!-- 标题 -->
+                <view class="loading-title">AI设计动作中...</view>
+
+                <!-- 进度条 -->
+                <view class="progress-container">
+                  <view class="progress-bar">
+                    <view class="progress-fill"></view>
+                  </view>
+                  <text class="progress-text">预计需要 30 秒</text>
+                </view>
+
+                <!-- 动态提示文字 -->
+                <view class="loading-tips">
+                  <text class="tip-icon">💡</text>
+                  <text class="tip-text">{{aiLoadingTip}}</text>
+                </view>
+
+                <!-- 装饰元素 -->
+                <view class="decoration-dots">
+                  <view class="dot dot-1"></view>
+                  <view class="dot dot-2"></view>
+                  <view class="dot dot-3"></view>
+                </view>
+              </view>
+            </view>
+
+            <scroll-view wx:elif="{{aiGeneratedPoses.length > 0}}" scroll-y class="pose-scroll">
+              <view
+                class="pose-item {{selectedAIPose === item ? 'selected' : ''}}"
+                wx:for="{{aiGeneratedPoses}}"
+                wx:key="index"
+                bindtap="selectAIPose"
+                data-pose="{{item}}"
+              >
+                <text class="pose-number">{{index + 1}}</text>
+                <view class="pose-info">
+                  <text class="pose-desc">{{item}}</text>
+                </view>
+                <text class="iconfont icon-check" wx:if="{{selectedAIPose === item}}"></text>
+              </view>
+            </scroll-view>
+
+            <view wx:else class="empty-poses">
+              <text class="empty-icon">📸</text>
+              <text class="empty-text">正在为您生成姿势变体...</text>
             </view>
           </view>
 

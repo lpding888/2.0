@@ -319,9 +319,30 @@ Page({
 
 
   /**
-   * 开始生成
+   * 开始生成 - 支持游客提示登录
    */
   async startGenerate() {
+    // 检查用户是否登录
+    const app = getApp()
+    if (!app.globalData.userInfo) {
+      // 游客体验时，友好提示登录
+      wx.showModal({
+        title: '开始试衣',
+        content: '请先登录体验AI试衣功能，免费生成您的专属试衣效果',
+        confirmText: '立即登录',
+        cancelText: '再看看',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到首页登录
+            wx.switchTab({
+              url: '/pages/index/index'
+            })
+          }
+        }
+      })
+      return
+    }
+
     // 验证必需参数
     if (!this.data.modelImage) {
       wx.showToast({

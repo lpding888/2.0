@@ -171,9 +171,25 @@ Page({
   },
 
   /**
-   * 跳转到积分充值页面
+   * 跳转到积分充值页面 - 需要登录
    */
   goToRecharge() {
+    if (!this.data.userInfo) {
+      wx.showModal({
+        title: '积分充值',
+        content: '请先登录后再进行充值',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            wx.switchTab({
+              url: '/pages/index/index'
+            })
+          }
+        }
+      })
+      return
+    }
+
     wx.navigateTo({
       url: '/pages/recharge/recharge'
     });
@@ -223,9 +239,25 @@ Page({
   },
 
   /**
-   * 每日签到：成功后积分+1并刷新用户信息（连续7天可获得2积分）
+   * 每日签到：成功后积分+1并刷新用户信息（连续7天可获得2积分）- 需要登录
    */
   async handleSignIn() {
+    if (!this.data.userInfo) {
+      wx.showModal({
+        title: '每日签到',
+        content: '请先登录后再进行签到',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            wx.switchTab({
+              url: '/pages/index/index'
+            })
+          }
+        }
+      })
+      return
+    }
+
     if (this.data.signing || this.data.signInToday) return;
     this.setData({ signing: true });
     try {

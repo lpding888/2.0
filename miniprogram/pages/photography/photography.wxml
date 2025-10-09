@@ -240,29 +240,12 @@
     </view>
   </view>
 
-  <!-- 生成设置 -->
-  <view class="section">
-    <view class="section-title">生成设置</view>
-    
-    <view class="form-group">
-      <text class="label">生成数量</text>
-      <view class="stepper">
-        <button class="dec" data-field="generateCount" data-step="1" bindtap="onStepDec">-</button>
-        <input class="num" type="number" value="{{generateCount}}" data-field="generateCount" bindblur="onNumberBlur" />
-        <button class="inc" data-field="generateCount" data-step="1" bindtap="onStepInc">+</button>
-      </view>
-      <text class="tip">1-10</text>
-      <view class="cost-summary {{(userCredits !== null && userCredits < generateCount) ? 'insufficient' : ''}}">
-        <text>预计消耗：{{generateCount}} 张</text>
-        <text wx:if="{{userCredits !== null}}"> · 剩余：{{userCredits}} 张</text>
-      </view>
-    </view>
-  </view>
 
   <!-- 操作按钮 -->
   <view class="action-buttons">
     <button class="reset-btn" bindtap="resetForm">重置</button>
     <button class="preset-btn" bindtap="openPresetModal">预设</button>
+    <button class="ai-btn" bindtap="openAIHelper">🤖 AI助手</button>
     <button
       class="generate-btn {{isGenerating ? 'loading' : ''}}"
       bindtap="startGenerate"
@@ -400,6 +383,178 @@
             <text class="preset-empty-text">暂无预设，保存当前配置试试吧</text>
           </view>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI助手弹窗 -->
+  <view class="ai-helper-modal" wx:if="{{showAIHelper}}">
+    <view class="ai-helper-mask" bindtap="closeAIHelper"></view>
+    <view class="ai-helper-content">
+      <view class="ai-helper-header">
+        <text class="ai-helper-title">🤖 AI摄影助手</text>
+        <view class="ai-helper-close" bindtap="closeAIHelper">✕</view>
+      </view>
+
+      <!-- Tab切换 -->
+      <view class="ai-tabs">
+        <view
+          class="ai-tab {{activeAITab === 'pose' ? 'active' : ''}}"
+          data-tab="pose"
+          bindtap="switchAITab"
+        >
+          姿势生成
+        </view>
+        <view
+          class="ai-tab {{activeAITab === 'prompt' ? 'active' : ''}}"
+          data-tab="prompt"
+          bindtap="switchAITab"
+        >
+          Prompt优化
+        </view>
+        <view
+          class="ai-tab {{activeAITab === 'scene' ? 'active' : ''}}"
+          data-tab="scene"
+          bindtap="switchAITab"
+        >
+          场景推荐
+        </view>
+      </view>
+
+      <!-- Tab内容 -->
+      <scroll-view class="ai-tab-content" scroll-y>
+        <!-- 姿势生成 -->
+        <view wx:if="{{activeAITab === 'pose'}}" class="ai-panel">
+          <view class="ai-intro">
+            <text>根据场景和服装风格，AI为您生成专业的拍摄姿势建议</text>
+          </view>
+
+          <view class="ai-param">
+            <text class="param-label">当前场景</text>
+            <text class="param-value">{{selectedScene ? selectedScene.name : (customSceneText || '未选择')}}</text>
+          </view>
+
+          <view class="ai-param">
+            <text class="param-label">服装风格</text>
+            <text class="param-value">{{parameters.outfit_description || '未描述'}}</text>
+          </view>
+
+          <button class="ai-generate-btn" bindtap="generatePoses" disabled="{{aiLoading}}">
+            {{aiLoading ? 'AI思考中...' : '生成姿势建议'}}
+          </button>
+
+          <!-- 生成的姿势列表 -->
+          <view class="ai-result" wx:if="{{aiGeneratedPoses.length > 0}}">
+            <view class="result-title">AI建议的姿势（点击使用）</view>
+            <view
+              class="pose-item"
+              wx:for="{{aiGeneratedPoses}}"
+              wx:key="index"
+              data-pose="{{item}}"
+              bindtap="selectAIPose"
+            >
+              <view class="pose-number">{{index + 1}}</view>
+              <text class="pose-text">{{item}}</text>
+              <view class="pose-check" wx:if="{{selectedAIPose === item}}">✓</view>
+            </view>
+          </view>
+
+          <!-- 姿势裂变 -->
+          <view class="ai-variation" wx:if="{{selectedAIPose}}">
+            <view class="variation-divider"></view>
+            <view class="variation-header">
+              <text class="variation-title">🎯 姿势裂变</text>
+              <text class="variation-desc">基于选中的姿势生成5个变体</text>
+            </view>
+            <button class="variation-btn" bindtap="generatePoseVariations" disabled="{{aiLoading}}">
+              {{aiLoading ? '生成中...' : '生成姿势变体'}}
+            </button>
+
+            <view class="ai-result" wx:if="{{aiPoseVariations.length > 0}}">
+              <view
+                class="pose-item variation"
+                wx:for="{{aiPoseVariations}}"
+                wx:key="index"
+                data-pose="{{item}}"
+                bindtap="selectAIPose"
+              >
+                <view class="pose-number">变{{index + 1}}</view>
+                <text class="pose-text">{{item}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- Prompt优化 -->
+        <view wx:elif="{{activeAITab === 'prompt'}}" class="ai-panel">
+          <view class="ai-intro">
+            <text>输入简单描述，AI帮您扩展为专业的摄影Prompt</text>
+          </view>
+
+          <view class="prompt-input-group">
+            <textarea
+              class="prompt-textarea"
+              placeholder="例如：站着的姿势"
+              value="{{userPromptInput}}"
+              bindinput="onPromptInput"
+              maxlength="200"
+            ></textarea>
+            <text class="prompt-count">{{userPromptInput.length}}/200</text>
+          </view>
+
+          <button class="ai-generate-btn" bindtap="optimizePrompt" disabled="{{aiLoading}}">
+            {{aiLoading ? 'AI优化中...' : '优化Prompt'}}
+          </button>
+
+          <!-- 优化结果 -->
+          <view class="ai-result" wx:if="{{optimizedPrompt}}">
+            <view class="result-title">优化后的Prompt</view>
+            <view class="optimized-prompt-box">
+              <text class="optimized-text">{{optimizedPrompt}}</text>
+            </view>
+            <button class="use-prompt-btn" bindtap="useOptimizedPrompt">使用此Prompt</button>
+          </view>
+        </view>
+
+        <!-- 场景推荐 -->
+        <view wx:elif="{{activeAITab === 'scene'}}" class="ai-panel">
+          <view class="ai-intro">
+            <text>根据服装描述，AI为您推荐最适合的拍摄场景</text>
+          </view>
+
+          <view class="ai-param">
+            <text class="param-label">服装描述</text>
+            <text class="param-value">{{parameters.outfit_description || '未描述'}}</text>
+          </view>
+
+          <view class="ai-param" wx:if="{{parameters.clothing_material}}">
+            <text class="param-label">服装材质</text>
+            <text class="param-value">{{parameters.clothing_material}}</text>
+          </view>
+
+          <button class="ai-generate-btn" bindtap="recommendScenes" disabled="{{aiLoading}}">
+            {{aiLoading ? 'AI分析中...' : '推荐场景'}}
+          </button>
+
+          <!-- 推荐结果 -->
+          <view class="ai-result" wx:if="{{aiSceneRecommendations.length > 0}}">
+            <view class="result-title">AI推荐的场景（点击应用）</view>
+            <view
+              class="scene-recommendation-item"
+              wx:for="{{aiSceneRecommendations}}"
+              wx:key="index"
+              data-scene="{{item}}"
+              bindtap="applyAIScene"
+            >
+              <view class="scene-rec-icon">{{index + 1}}</view>
+              <text class="scene-rec-text">{{item}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="ai-footer">
+        <text class="ai-tip">💡 所有AI功能不消耗积分，免费使用</text>
       </view>
     </view>
   </view>

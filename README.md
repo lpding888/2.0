@@ -18,7 +18,6 @@ AI摄影师小程序为电商卖家、服装设计师、个人用户提供AI驱�
 
 - ✅ **Serverless架构**: 基于微信云开发,零服务器运维
 - ✅ **Fire-and-Forget模式**: 异步Worker处理,避免超时
-- ✅ **Base64预处理**: 前端预处理图片,降低云函数内存压力
 - ✅ **原子操作**: 数据库原子递增/递减,保证并发安全
 - ✅ **云函数预热**: 定时ping防止冷启动
 - ✅ **智能缓存**: 5分钟TTL缓存,减少数据库查询
@@ -158,7 +157,7 @@ photography 云函数(主函数)
          ‖  (并行执行,不阻塞用户)
          ‖
     photography-worker 云函数(独立容器)
-    ├─ 下载服装图片(支持Base64预处理)
+    ├─ 下载服装图片
     ├─ 调用AI服务商API生成图片
     ├─ 上传生成结果到云存储
     ├─ 更新作品状态(status=completed/failed)
@@ -172,40 +171,6 @@ photography 云函数(主函数)
 - 主函数只捕获**真正的失败**(非timeout),只有真失败才退款
 - Worker超时不退款(因为后台可能仍在执行)
 - Worker内部失败会执行退款逻辑
-
-### Base64预处理优化
-
-**问题:** 云函数处理多张图片时,频繁进行图片下载、格式转换,导致内存占用过高,触发 `RequestTooLarge` 错误。
-
-**解决方案:** 将图片转换操作前移到小程序端
-
-```
-传统模式:
-  小程序 → 上传图片文件 → 云存储 → Worker下载 → 转换Base64 → 调用AI
-
-优化模式(Base64预处理):
-  小程序 → 转换Base64 → 上传Base64字符串 → 云存储 → Worker直接读取 → 调用AI
-```
-
-**实现细节:**
-- `miniprogram/utils/upload.js`: 增加 `base64Mode` 参数
-- Worker函数检测文件内容:
-  ```javascript
-  const fileContent = downloadResult.fileContent.toString('utf8')
-  if (fileContent.startsWith('data:image/')) {
-    // Base64预处理模式,直接使用
-    const matches = fileContent.match(/^data:image\/([^;]+);base64,(.+)$/)
-    base64Data = matches[2]
-  } else {
-    // 兼容旧模式,转换二进制数据
-    base64Data = downloadResult.fileContent.toString('base64')
-  }
-  ```
-
-**效果:**
-- 云函数内存占用降低 60%+
-- 生成成功率提升至 95%+
-- 支持旧数据兼容
 
 ### 云函数预热机制
 
@@ -481,7 +446,6 @@ tcb db import -e <env-id> -c users --file-path ./backup/users.json
 
 **技术优化:**
 - ✅ Fire-and-Forget异步模式
-- ✅ Base64预处理优化
 - ✅ 云函数预热机制
 - ✅ 智能缓存(5分钟TTL)
 - ✅ 原子操作保证并发安全

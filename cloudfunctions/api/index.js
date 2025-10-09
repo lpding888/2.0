@@ -67,6 +67,8 @@ exports.main = async (event, context) => {
         return await toggleFavorite(event, OPENID)
       case 'updateWorkTitle':
         return await updateWorkTitle(event, OPENID)
+      case 'updateWork':
+        return await updateWork(event, OPENID)
       case 'getUserStats':
         return await getUserStats(event, OPENID)
       case 'updateUserPreferences':
@@ -309,7 +311,12 @@ async function getWorkDetail(event, OPENID) {
         scene_id: work.scene_id || null,
         scene_name: work.scene_name || null,
         title: work.title || null,
-        completed_at: work.completed_at || null
+        completed_at: work.completed_at || null,
+        // 🎭 姿势裂变数据
+        ai_pose_variations: work.ai_pose_variations || null,
+        pose_variations_created_at: work.pose_variations_created_at || null,
+        // 🔗 引用作品ID（用于姿势裂变继承）
+        reference_work_id: work.reference_work_id || null
       },
       message: '获取作品详情成功'
     }
@@ -552,6 +559,73 @@ async function updateWorkTitle(event, OPENID) {
     return {
       success: false,
       message: '更新标题失败'
+    }
+  }
+}
+
+/**
+ * 更新作品数据（通用方法）
+ */
+async function updateWork(event, OPENID) {
+  try {
+    const db = getDb()
+    const { workId, updates } = event
+
+    if (!workId) {
+      return {
+        success: false,
+        message: '作品ID不能为空'
+      }
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      return {
+        success: false,
+        message: '更新数据不能为空'
+      }
+    }
+
+    // 检查作品是否存在且属于当前用户
+    const result = await db.collection('works')
+      .where({
+        _id: workId,
+        user_openid: OPENID
+      })
+      .get()
+
+    if (result.data.length === 0) {
+      return {
+        success: false,
+        message: '作品不存在或无权限修改'
+      }
+    }
+
+    // 添加更新时间
+    const updateData = {
+      ...updates,
+      updated_at: new Date()
+    }
+
+    // 更新作品数据
+    await db.collection('works')
+      .doc(workId)
+      .update({
+        data: updateData
+      })
+
+    console.log(`✅ 作品更新成功: ${workId}, 更新字段:`, Object.keys(updates))
+
+    return {
+      success: true,
+      data: updates,
+      message: '作品更新成功'
+    }
+
+  } catch (error) {
+    console.error('更新作品失败:', error)
+    return {
+      success: false,
+      message: '更新作品失败'
     }
   }
 }

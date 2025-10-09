@@ -23,8 +23,8 @@
           <view class="loading-spinner" wx:else></view>
         </view>
         <view class="login-prompt">
-          <text class="login-text">{{loading ? '登录中...' : '点击一键登录'}}</text>
-          <text class="login-hint" wx:if="{{!loading}}">解锁完整功能</text>
+          <text class="login-text">{{loading ? '登录中...' : '点击开始体验'}}</text>
+          <text class="login-hint" wx:if="{{!loading}}">免费体验AI摄影</text>
         </view>
         <view class="login-arrow" wx:if="{{!loading}}">→</view>
       </view>
@@ -81,11 +81,15 @@
     </view>
   </view>
 
-  <!-- 次要登录入口（保留底部位置） -->
-  <view class="secondary-login" wx:if="{{!userInfo}}">
+  <!-- 游客体验提示 -->
+  <view class="guest-experience" wx:if="{{!userInfo}}">
+    <view class="experience-text">
+      <text>🎯 游客可免费浏览功能演示</text>
+      <text class="experience-hint">登录后可生成专属AI作品</text>
+    </view>
     <button class="secondary-login-btn btn-enhanced btn-ripple" bindtap="onLogin" loading="{{loading}}">
       <text class="login-icon">🚀</text>
-      <text>{{loading ? '登录中...' : '微信一键登录'}}</text>
+      <text>{{loading ? '登录中...' : '免费开始创作'}}</text>
     </button>
   </view>
 

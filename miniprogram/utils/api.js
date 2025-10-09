@@ -715,6 +715,17 @@ class ApiService {
     })
   }
 
+  /**
+   * 更新作品数据（通用方法）
+   */
+  async updateWork(workId, updates) {
+    return await this.callCloudFunction('api', {
+      action: 'updateWork',
+      workId: workId,
+      updates: updates
+    })
+  }
+
   // ==================== 摄影相关 ====================
   
   /**

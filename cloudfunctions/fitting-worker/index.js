@@ -31,6 +31,32 @@ exports.main = async (event, context) => {
  * 处理试衣任务的核心逻辑
  */
 async function processFittingTask(taskId, originalEvent, wxContext) {
+  // 🚨 设置整体超时控制，确保在云函数被强制终止前更新状态
+  let timeoutTriggered = false
+  const overallTimeout = setTimeout(async () => {
+    timeoutTriggered = true
+    console.error('⏰ 任务处理超时(55秒)，主动更新状态为失败')
+    try {
+      await db.collection('task_queue').doc(taskId).update({
+        data: {
+          status: 'failed',
+          error: '任务处理超时(55秒)，可能是AI服务响应缓慢',
+          updated_at: new Date()
+        }
+      })
+      await db.collection('works').where({ task_id: taskId }).update({
+        data: {
+          status: 'failed',
+          error: '任务处理超时',
+          updated_at: new Date()
+        }
+      })
+      console.log('✅ 超时状态更新完成')
+    } catch (updateError) {
+      console.error('❌ 超时状态更新失败:', updateError)
+    }
+  }, 55000) // 55秒后触发，留5秒给云函数清理
+
   try {
     console.log('👗 processFittingTask 开始执行, taskId:', taskId)
 
@@ -513,32 +539,43 @@ async function processFittingTask(taskId, originalEvent, wxContext) {
 
     console.log('🎉 fitting-worker完成: ' + taskId)
 
+    // 清理超时定时器
+    clearTimeout(overallTimeout)
 
   } catch (error) {
     console.error('试衣任务处理失败:', error)
 
-    // 更新任务状态为失败
-    try {
-      await db.collection('task_queue')
-        .doc(taskId)
-        .update({
-          data: {
-            status: 'failed',
-            error: error.message,
-            updated_at: new Date()
-          }
-        })
+    // 清理超时定时器
+    clearTimeout(overallTimeout)
 
-      await db.collection('works')
-        .where({ task_id: taskId })
-        .update({
-          data: {
-            status: 'failed',
-            updated_at: new Date()
-          }
-        })
-    } catch (updateError) {
-      console.error('更新失败状态失败:', updateError)
+    // 更新任务状态为失败（如果超时未触发）
+    if (!timeoutTriggered) {
+      try {
+        await db.collection('task_queue')
+          .doc(taskId)
+          .update({
+            data: {
+              status: 'failed',
+              error: error.message,
+              updated_at: new Date()
+            }
+          })
+
+        await db.collection('works')
+          .where({ task_id: taskId })
+          .update({
+            data: {
+              status: 'failed',
+              error: error.message,
+              updated_at: new Date()
+            }
+          })
+        console.log('✅ 错误状态更新完成')
+      } catch (updateError) {
+        console.error('❌ 更新失败状态失败:', updateError)
+      }
+    } else {
+      console.log('⚠️ 超时已触发，跳过错误状态更新')
     }
 
     throw error

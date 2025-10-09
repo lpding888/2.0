@@ -31,19 +31,19 @@ class DownloadingHandler extends BaseStateHandler {
           fileID: imageId
         })
 
-        // 检查是否为base64预处理模式
+        // 检测文件格式并转换为base64
         const fileContent = result.fileContent.toString('utf8')
         let base64Data, mimeType
 
         if (fileContent.startsWith('data:image/')) {
-          // Base64预处理模式
+          // 文件已是base64格式
           const matches = fileContent.match(/^data:image\/([^;]+);base64,(.+)$/)
           if (matches) {
             mimeType = `image/${matches[1]}`
             base64Data = matches[2]
           }
         } else {
-          // 传统模式
+          // 二进制文件，转换为base64
           base64Data = result.fileContent.toString('base64')
           mimeType = 'image/jpeg'
         }

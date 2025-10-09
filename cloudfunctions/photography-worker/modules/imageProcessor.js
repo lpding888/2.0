@@ -71,13 +71,13 @@ class ImageProcessor {
    */
   async downloadSingleImage(fileId) {
     try {
-      // 检查是否是base64预处理模式的文件
-      if (await this.isBase64PreprocessedFile(fileId)) {
-        console.log(`🔄 检测到base64预处理文件，直接读取`)
-        return await this.readBase64PreprocessedFile(fileId)
+      // 检测文件是否为base64格式
+      if (await this.isBase64File(fileId)) {
+        console.log(`🔄 检测到base64格式文件，直接读取`)
+        return await this.readBase64File(fileId)
       }
 
-      // 传统模式：获取临时URL并下载
+      // 获取临时URL并下载二进制文件
       console.log(`🔗 获取临时下载URL: ${fileId}`)
       const tempUrlResult = await cloud.getTempFileURL({
         fileList: [fileId]
@@ -118,11 +118,11 @@ class ImageProcessor {
   }
 
   /**
-   * 检查是否是base64预处理文件
+   * 检查文件是否为base64格式
    */
-  async isBase64PreprocessedFile(fileId) {
+  async isBase64File(fileId) {
     try {
-      // 尝试下载文件的前100字节检查是否是base64格式
+      // 尝试下载文件的前100字节检查格式
       const downloadResult = await cloud.downloadFile({
         fileID: fileId
       })
@@ -135,9 +135,9 @@ class ImageProcessor {
   }
 
   /**
-   * 读取base64预处理文件
+   * 读取base64格式文件
    */
-  async readBase64PreprocessedFile(fileId) {
+  async readBase64File(fileId) {
     const downloadResult = await cloud.downloadFile({
       fileID: fileId
     })
@@ -146,7 +146,7 @@ class ImageProcessor {
     const matches = fileContent.match(/^data:image\/([^;]+);base64,(.+)$/)
 
     if (!matches) {
-      throw new Error('base64预处理文件格式错误')
+      throw new Error('base64文件格式错误')
     }
 
     const [, format, base64Data] = matches

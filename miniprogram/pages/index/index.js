@@ -126,43 +126,31 @@ Page({
   },
 
   /**
-   * 跳转到服装摄影页面
+   * 跳转到服装摄影页面 - 支持游客浏览
    */
   generatePhoto() {
     console.log('index.js generatePhoto: 点击AI摄影，当前userInfo', this.data.userInfo)
-    if (!this.data.userInfo) {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
-      })
-      return
-    }
 
+    // 支持游客浏览，在需要时才提示登录
     wx.navigateTo({
       url: '/pages/photography/photography'
     })
   },
 
   /**
-   * 跳转到试衣间页面
+   * 跳转到试衣间页面 - 支持游客浏览
    */
   goToFitting() {
     console.log('index.js goToFitting: 点击虚拟试衣，当前userInfo', this.data.userInfo)
-    if (!this.data.userInfo) {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
-      })
-      return
-    }
 
+    // 支持游客浏览，在需要时才提示登录
     wx.navigateTo({
       url: '/pages/fitting/fitting'
     })
   },
 
   /**
-   * 查看作品
+   * 查看作品 - 支持游客浏览
    */
   viewWorks() {
     wx.switchTab({
@@ -171,13 +159,20 @@ Page({
   },
 
   /**
-   * 跳转到积分页面
+   * 跳转到积分页面 - 需要登录
    */
   goToCredits() {
     if (!this.data.userInfo) {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
+      // 显示友好的登录提示，而不是生硬的"请先登录"
+      wx.showModal({
+        title: '查看积分',
+        content: '请先登录查看您的积分余额',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            this.onLogin()
+          }
+        }
       })
       return
     }
