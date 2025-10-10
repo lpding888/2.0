@@ -126,26 +126,20 @@ Page({
   },
 
   /**
-   * 跳转到服装摄影页面 - 支持游客浏览
+   * 跳转到服装商业拍摄页面
    */
-  generatePhoto() {
-    console.log('index.js generatePhoto: 点击AI摄影，当前userInfo', this.data.userInfo)
-
-    // 支持游客浏览，在需要时才提示登录
+  goToCommercial() {
     wx.navigateTo({
-      url: '/pages/photography/photography'
+      url: '/pages/commercial/commercial'
     })
   },
 
   /**
-   * 跳转到试衣间页面 - 支持游客浏览
+   * 跳转到玩美空间页面
    */
-  goToFitting() {
-    console.log('index.js goToFitting: 点击虚拟试衣，当前userInfo', this.data.userInfo)
-
-    // 支持游客浏览，在需要时才提示登录
+  goToPersonal() {
     wx.navigateTo({
-      url: '/pages/fitting/fitting'
+      url: '/pages/personal/personal'
     })
   },
 

@@ -47,24 +47,24 @@
 
   <!-- 主要功能卡片 -->
   <view class="main-features">
-    <view class="feature-card primary-card card-hover" bindtap="generatePhoto" style="height: 274rpx; display: flex; box-sizing: border-box; left: 0rpx; top: 0rpx">
+    <view class="feature-card primary-card card-hover" bindtap="goToCommercial" style="height: 274rpx; display: flex; box-sizing: border-box; left: 0rpx; top: 0rpx">
       <view class="card-icon">
         <text class="icon-text">📸</text>
       </view>
       <view class="card-content">
-        <text class="card-title">服装拍摄</text>
-        <text class="card-desc">像导演一样，用对话指挥每一个镜头</text>
+        <text class="card-title">服装商业拍摄</text>
+        <text class="card-desc">服装拍摄与模特换装，打造专业大片</text>
       </view>
       <view class="card-arrow">→</view>
     </view>
 
-    <view class="feature-card secondary-card card-hover" bindtap="goToFitting" style="height: 270rpx; display: flex; box-sizing: border-box; left: 0rpx; top: 0rpx">
+    <view class="feature-card secondary-card card-hover" bindtap="goToPersonal" style="height: 270rpx; display: flex; box-sizing: border-box; left: 0rpx; top: 0rpx">
       <view class="card-icon">
-        <text class="icon-text">👗</text>
+        <text class="icon-text">✨</text>
       </view>
       <view class="card-content">
-        <text class="card-title">试衣展示</text>
-        <text class="card-desc">看衣服穿在真人身上的效果</text>
+        <text class="card-title">玩美空间</text>
+        <text class="card-desc">试衣间·衣柜·全球旅行，发现不一样的自己</text>
       </view>
       <view class="card-arrow">→</view>
     </view>
@@ -74,8 +74,8 @@
         <text class="icon-text">🎨</text>
       </view>
       <view class="card-content">
-        <text class="card-title">摄影作品</text>
-        <text class="card-desc">查看你的服装大片集</text>
+        <text class="card-title">作品集</text>
+        <text class="card-desc">查看你的AI创作作品</text>
       </view>
       <view class="card-arrow">→</view>
     </view>

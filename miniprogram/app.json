@@ -1,8 +1,12 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/commercial/commercial",
+    "pages/personal/personal",
     "pages/photography/photography",
     "pages/fitting/fitting",
+    "pages/wardrobe/wardrobe",
+    "pages/travel/travel",
     "pages/works/works",
     "pages/work-detail/work-detail",
     "pages/progress/progress",
