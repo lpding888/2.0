@@ -327,4 +327,27 @@
       </view>
     </view>
   </view>
+
+  <!-- 衣柜选择弹窗 -->
+  <view class="wardrobe-selector-modal" wx:if="{{showWardrobeSelector}}">
+    <view class="wardrobe-selector-mask" bindtap="closeWardrobeSelector"></view>
+    <view class="wardrobe-selector-content">
+      <view class="wardrobe-selector-header">
+        <text class="wardrobe-selector-title">👔 从衣柜选择</text>
+        <view class="wardrobe-selector-close" bindtap="closeWardrobeSelector">✕</view>
+      </view>
+
+      <scroll-view class="wardrobe-selector-list" scroll-y>
+        <block wx:for="{{wardrobeList}}" wx:key="id">
+          <view class="wardrobe-selector-item" bindtap="onWardrobeSelect" data-item="{{item}}">
+            <image class="wardrobe-item-image" src="{{item.url}}" mode="aspectFill" lazy-load="true"></image>
+            <view class="wardrobe-item-info">
+              <text class="wardrobe-item-name">{{item.name}}</text>
+              <text class="wardrobe-item-category">{{item.category === 'top' ? '上衣' : item.category === 'bottom' ? '下装' : item.category === 'dress' ? '连衣裙' : '其他'}}</text>
+            </view>
+          </view>
+        </block>
+      </scroll-view>
+    </view>
+  </view>
 </view>

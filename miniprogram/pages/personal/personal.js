@@ -7,11 +7,11 @@ Page({
   },
 
   /**
-   * 前往试衣间
+   * 前往试衣间（个人版）
    */
   goToFitting() {
     wx.navigateTo({
-      url: '/pages/fitting/fitting'
+      url: '/pages/fitting-personal/fitting-personal'
     })
   },
 

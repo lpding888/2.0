@@ -827,6 +827,17 @@ class ApiService {
     })
   }
 
+  /**
+   * 获取个人功能任务进度（个人试衣、全球旅行）
+   */
+  async getPersonalProgress(taskId) {
+    return await this.callCloudFunction('personal', {
+      action: 'getProgress',
+      taskId: taskId,
+      __noLoading: true
+    })
+  }
+
   // ==================== 支付相关 ====================
   
   /**

@@ -199,26 +199,35 @@ Page({
         scenePrompt += `, ${this.data.customDescription}`
       }
 
-      // 调用photography云函数生成旅行照片
-      const result = await apiService.generatePhoto({
-        clothing_images: [], // 旅行功能不需要服装图片
-        model_image: this.data.userPhoto.fileId,
-        custom_scene: scenePrompt,
-        parameters: {
-          gender: 'auto', // 自动检测
-          type: 'travel' // 标记为旅行类型
+      // 调用personal云函数生成旅行照片
+      const result = await apiService.callCloudFunction({
+        name: 'personal',
+        action: 'create',
+        data: {
+          type: 'travel',
+          userPhoto: {
+            fileId: this.data.userPhoto.fileId,
+            url: this.data.userPhoto.url
+          },
+          destination: {
+            id: destination.id,
+            name: destination.name,
+            country: destination.country,
+            prompt: scenePrompt
+          },
+          customDescription: this.data.customDescription
         }
       })
 
-      if (result.success && result.task_id) {
-        this.setData({ currentTaskId: result.task_id })
+      if (result.success && result.data && result.data.taskId) {
+        const taskId = result.data.taskId
 
         // 跳转到进度页面
         wx.navigateTo({
-          url: `/pages/progress/progress?taskId=${result.task_id}&type=travel`
+          url: `/pages/progress/progress?taskId=${taskId}&type=travel`
         })
       } else {
-        throw new Error(result.message || '生成失败')
+        throw new Error(result.message || '创建任务失败')
       }
     } catch (error) {
       console.error('生成失败:', error)
@@ -226,7 +235,6 @@ Page({
         title: error.message || '生成失败，请重试',
         icon: 'none'
       })
-    } finally {
       this.setData({ isGenerating: false })
     }
   },

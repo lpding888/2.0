@@ -139,8 +139,13 @@ Page({
       let res
       if (this.data.type === 'photography') {
         res = await apiService.getPhotographyProgress(this.data.taskId)
+      } else if (this.data.type === 'fitting') {
+        res = await apiService.getFittingProgress(this.data.taskId)
+      } else if (this.data.type === 'fitting-personal' || this.data.type === 'travel') {
+        // 个人试衣和全球旅行使用统一的 personal 云函数
+        res = await apiService.getPersonalProgress(this.data.taskId)
       } else {
-        // 试衣间也使用相同的进度查询接口
+        // 其他类型默认使用 photography 接口
         res = await apiService.getPhotographyProgress(this.data.taskId)
       }
 
@@ -277,6 +282,18 @@ Page({
    * 跳转到作品页面
    */
   goToWorks() {
+    // 根据type设置默认tab
+    const app = getApp()
+    if (this.data.type === 'fitting-personal') {
+      app.globalData.worksDefaultTab = 3 // 个人试衣tab的索引
+    } else if (this.data.type === 'travel') {
+      app.globalData.worksDefaultTab = 4 // 全球旅行tab的索引
+    } else if (this.data.type === 'fitting') {
+      app.globalData.worksDefaultTab = 2 // 模特换装tab的索引
+    } else if (this.data.type === 'photography') {
+      app.globalData.worksDefaultTab = 1 // 服装摄影tab的索引
+    }
+
     wx.switchTab({
       url: '/pages/works/works'
     })

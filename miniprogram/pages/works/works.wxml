@@ -98,7 +98,9 @@
             <!-- 作品类型标签 -->
             <view class="work-type-tag">
               <text wx:if="{{item.type === 'photography'}}">摄影</text>
-              <text wx:elif="{{item.type === 'fitting'}}">试衣</text>
+              <text wx:elif="{{item.type === 'fitting'}}">换装</text>
+              <text wx:elif="{{item.type === 'fitting-personal'}}">试衣</text>
+              <text wx:elif="{{item.type === 'travel'}}">旅行</text>
             </view>
             
             <!-- 收藏按钮 -->

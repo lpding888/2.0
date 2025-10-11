@@ -619,7 +619,9 @@ Page({
     tabs: [
       { key: 'all', label: '全部' },
       { key: 'photography', label: '服装摄影' },
-      { key: 'fitting', label: '试衣间' },
+      { key: 'fitting', label: '模特换装' },
+      { key: 'fitting-personal', label: '个人试衣' },
+      { key: 'travel', label: '全球旅行' },
       { key: 'favorite', label: '我的收藏' }
     ],
     
@@ -702,6 +704,17 @@ Page({
     // 🔧 防御性检查：确保关键数据结构已初始化
     if (!this.setDataQueue) {
       this.setDataQueue = []
+    }
+
+    // 检查是否需要切换到指定tab（从progress页面跳转过来）
+    const app = getApp()
+    if (app.globalData.worksDefaultTab !== undefined) {
+      const targetTab = app.globalData.worksDefaultTab
+      delete app.globalData.worksDefaultTab // 使用后清除
+      if (targetTab !== this.data.currentTab) {
+        this.switchTab({ currentTarget: { dataset: { index: targetTab } } })
+        return // 切换tab后会触发loadWorks，直接返回
+      }
     }
 
     // 临时修复：清理可能的错误任务存储
