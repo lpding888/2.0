@@ -286,6 +286,13 @@ async function dailyCheckin(event, wxContext) {
       }
     })
 
+    // 获取当前用户信息以获取签到后的积分余额
+    const userResult = await db.collection('users')
+      .where({ openid: OPENID })
+      .get()
+
+    const currentCredits = userResult.data.length > 0 ? (userResult.data[0].credits || 0) : 0
+
     // 增加用户积分
     await db.collection('users')
       .where({ openid: OPENID })
@@ -296,6 +303,15 @@ async function dailyCheckin(event, wxContext) {
           updated_at: new Date()
         }
       })
+
+    // 添加积分记录
+    await addCreditRecord({
+      user_openid: OPENID,
+      type: 'daily_checkin',
+      amount: 1,
+      description: '每日签到奖励',
+      balance_after: currentCredits + 1
+    })
 
     return {
       success: true,
