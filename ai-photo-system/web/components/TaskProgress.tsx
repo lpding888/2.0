@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '../lib/store';
-import { websocketManager } from '../lib/websocket';
+import { wsManager } from '../lib/websocket';
 import { tasksAPI } from '../lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -65,14 +65,14 @@ export default function TaskProgress({
       }
     };
 
-    websocketManager.on('task_progress', handleProgress);
-    websocketManager.on('task_complete', handleComplete);
-    websocketManager.on('task_failed', handleFailed);
+    wsManager.on('task_progress', handleProgress);
+    wsManager.on('task_complete', handleComplete);
+    wsManager.on('task_failed', handleFailed);
 
     return () => {
-      websocketManager.off('task_progress', handleProgress);
-      websocketManager.off('task_complete', handleComplete);
-      websocketManager.off('task_failed', handleFailed);
+      wsManager.off('task_progress', handleProgress);
+      wsManager.off('task_complete', handleComplete);
+      wsManager.off('task_failed', handleFailed);
     };
   }, [updateTask, onComplete, onError]);
 
