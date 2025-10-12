@@ -233,6 +233,11 @@ export const creditsAPI = {
   createRechargeOrder: (packageId: string) => {
     return apiClient.post('/credits/recharge', { package_id: packageId });
   },
+
+  // 购买积分套餐（别名）
+  purchase: (packageId: string) => {
+    return apiClient.post('/credits/recharge', { package_id: packageId });
+  },
 };
 
 export default api;
