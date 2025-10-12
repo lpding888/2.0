@@ -8,6 +8,7 @@ interface UserState {
   token: string | null;
   setUser: (user: any) => void;
   setToken: (token: string) => void;
+  updateCredits: (credits: number) => void;
   logout: () => void;
 }
 
@@ -18,6 +19,9 @@ export const useUserStore = create<UserState>()(
       token: null,
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
+      updateCredits: (credits) => set((state) => ({
+        user: state.user ? { ...state.user, credits } : null
+      })),
       logout: () => set({ user: null, token: null }),
     }),
     {
