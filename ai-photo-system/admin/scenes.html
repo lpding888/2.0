@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>场景管理 - AI摄影系统管理后台</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-camera"></i> AI摄影系统</h3>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="index.html"><i class="fas fa-dashboard"></i> 仪表板</a></li>
+      <li><a href="users.html"><i class="fas fa-users"></i> 用户管理</a></li>
+      <li><a href="works.html"><i class="fas fa-images"></i> 作品管理</a></li>
+      <li><a href="tasks.html"><i class="fas fa-tasks"></i> 任务监控</a></li>
+      <li><a href="scenes.html" class="active"><i class="fas fa-palette"></i> 场景管理</a></li>
+      <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> 订单管理</a></li>
+      <li><a href="config.html"><i class="fas fa-cog"></i> 系统配置</a></li>
+      <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>场景管理</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <!-- 筛选和新增 -->
+      <div class="card mb-20">
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <select id="filterCategory" class="form-control" style="width: 150px;">
+            <option value="">全部分类</option>
+            <option value="indoor">室内</option>
+            <option value="outdoor">户外</option>
+            <option value="studio">摄影棚</option>
+          </select>
+          <select id="filterStatus" class="form-control" style="width: 150px;">
+            <option value="">全部状态</option>
+            <option value="active">激活</option>
+            <option value="inactive">禁用</option>
+          </select>
+          <button class="btn btn-primary" onclick="filterScenes()">筛选</button>
+          <button class="btn btn-success" onclick="showAddScene()" style="margin-left: auto;">+ 新增场景</button>
+        </div>
+      </div>
+
+      <!-- 场景列表 -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>场景列表</h2>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>场景ID</th>
+                <th>场景名称</th>
+                <th>分类</th>
+                <th>提示词</th>
+                <th>状态</th>
+                <th>排序</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="scenesTableBody">
+              <tr>
+                <td colspan="8" class="text-center">加载中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-wrapper">
+          <div class="pagination-info" id="paginationInfo">显示 0 条记录</div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑/新增场景模态框 -->
+  <div class="modal fade" id="sceneModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sceneModalTitle">新增场景</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="sceneId">
+          <div class="form-group">
+            <label>场景名称 *</label>
+            <input type="text" id="sceneName" class="form-control" placeholder="例：巴黎街头">
+          </div>
+          <div class="form-group">
+            <label>分类 *</label>
+            <select id="sceneCategory" class="form-control">
+              <option value="indoor">室内</option>
+              <option value="outdoor">户外</option>
+              <option value="studio">摄影棚</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <textarea id="sceneDescription" class="form-control" rows="2" placeholder="场景描述"></textarea>
+          </div>
+          <div class="form-group">
+            <label>提示词模板 *</label>
+            <textarea id="scenePrompt" class="form-control" rows="3" placeholder="AI生成提示词，例：Paris street, Eiffel Tower background, romantic atmosphere"></textarea>
+          </div>
+          <div class="form-group">
+            <label>封面图片URL</label>
+            <input type="text" id="sceneCover" class="form-control" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>排序（数字越小越靠前）</label>
+            <input type="number" id="sceneOrder" class="form-control" value="0">
+          </div>
+          <div class="form-group">
+            <label>状态</label>
+            <select id="sceneStatus" class="form-control">
+              <option value="active">激活</option>
+              <option value="inactive">禁用</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveScene()">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let totalPages = 1;
+
+    // 加载场景列表
+    async function loadScenes() {
+      utils.showLoading();
+
+      const category = document.getElementById('filterCategory').value;
+      const status = document.getElementById('filterStatus').value;
+
+      const result = await http.get('/scenes', {
+        page: currentPage,
+        pageSize: pageSize,
+        category: category,
+        status: status
+      });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const tbody = document.getElementById('scenesTableBody');
+        const data = result.data;
+
+        if (data.scenes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.scenes.map(scene => `
+          <tr>
+            <td>${scene.scene_id}</td>
+            <td>${scene.scene_name}</td>
+            <td><span class="badge badge-info">${scene.category}</span></td>
+            <td>${scene.prompt_template.substring(0, 50)}...</td>
+            <td>${utils.getStatusBadge(scene.status)}</td>
+            <td>${scene.display_order || 0}</td>
+            <td>${utils.formatDate(scene.created_at)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="editScene('${scene.scene_id}')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteScene('${scene.scene_id}')">删除</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 更新分页
+        totalPages = data.pagination.totalPages;
+        document.getElementById('paginationInfo').textContent =
+          `显示 ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data.pagination.total)} 条，共 ${data.pagination.total} 条`;
+
+        renderPagination();
+      }
+    }
+
+    // 渲染分页
+    function renderPagination() {
+      const container = document.getElementById('pagination');
+      const pages = [];
+
+      if (currentPage > 1) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage - 1})">上一页</button>`);
+      }
+
+      pages.push(`<span style="margin: 0 10px;">第 ${currentPage}/${totalPages} 页</span>`);
+
+      if (currentPage < totalPages) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage + 1})">下一页</button>`);
+      }
+
+      container.innerHTML = pages.join('');
+    }
+
+    // 切换页码
+    function changePage(page) {
+      currentPage = page;
+      loadScenes();
+    }
+
+    // 筛选
+    function filterScenes() {
+      currentPage = 1;
+      loadScenes();
+    }
+
+    // 显示新增场景
+    function showAddScene() {
+      document.getElementById('sceneModalTitle').textContent = '新增场景';
+      document.getElementById('sceneId').value = '';
+      document.getElementById('sceneName').value = '';
+      document.getElementById('sceneCategory').value = 'indoor';
+      document.getElementById('sceneDescription').value = '';
+      document.getElementById('scenePrompt').value = '';
+      document.getElementById('sceneCover').value = '';
+      document.getElementById('sceneOrder').value = '0';
+      document.getElementById('sceneStatus').value = 'active';
+
+      const modal = new bootstrap.Modal(document.getElementById('sceneModal'));
+      modal.show();
+    }
+
+    // 编辑场景
+    async function editScene(sceneId) {
+      utils.showLoading();
+
+      const result = await http.get(`/scenes/${sceneId}`);
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const scene = result.data.scene;
+
+        document.getElementById('sceneModalTitle').textContent = '编辑场景';
+        document.getElementById('sceneId').value = scene.scene_id;
+        document.getElementById('sceneName').value = scene.scene_name;
+        document.getElementById('sceneCategory').value = scene.category;
+        document.getElementById('sceneDescription').value = scene.description || '';
+        document.getElementById('scenePrompt').value = scene.prompt_template;
+        document.getElementById('sceneCover').value = scene.cover_image || '';
+        document.getElementById('sceneOrder').value = scene.display_order || 0;
+        document.getElementById('sceneStatus').value = scene.status;
+
+        const modal = new bootstrap.Modal(document.getElementById('sceneModal'));
+        modal.show();
+      }
+    }
+
+    // 保存场景
+    async function saveScene() {
+      const sceneId = document.getElementById('sceneId').value;
+      const sceneName = document.getElementById('sceneName').value;
+      const category = document.getElementById('sceneCategory').value;
+      const description = document.getElementById('sceneDescription').value;
+      const prompt = document.getElementById('scenePrompt').value;
+      const cover = document.getElementById('sceneCover').value;
+      const order = document.getElementById('sceneOrder').value;
+      const status = document.getElementById('sceneStatus').value;
+
+      if (!sceneName || !prompt) {
+        alert('请填写场景名称和提示词');
+        return;
+      }
+
+      utils.showLoading();
+
+      const data = {
+        scene_name: sceneName,
+        category: category,
+        description: description,
+        prompt_template: prompt,
+        cover_image: cover,
+        display_order: parseInt(order),
+        status: status
+      };
+
+      let result;
+      if (sceneId) {
+        // 更新
+        result = await http.put(`/scenes/${sceneId}`, data);
+      } else {
+        // 新增
+        result = await http.post('/scenes', data);
+      }
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        alert('保存成功');
+        bootstrap.Modal.getInstance(document.getElementById('sceneModal')).hide();
+        loadScenes();
+      }
+    }
+
+    // 删除场景
+    async function deleteScene(sceneId) {
+      if (!confirm('确定要删除这个场景吗？')) return;
+
+      utils.showLoading();
+
+      const result = await http.delete(`/scenes/${sceneId}`);
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        alert('删除成功');
+        loadScenes();
+      }
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', () => {
+      loadScenes();
+    });
+  </script>
+</body>
+</html>

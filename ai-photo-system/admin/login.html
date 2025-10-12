@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理员登录 - AI摄影系统</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-container">
+      <div class="login-header">
+        <h2>AI摄影系统</h2>
+        <p>管理后台登录</p>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" class="form-control" id="username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" class="form-control" id="password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mt-3">登录</button>
+      </form>
+
+      <p class="text-center text-muted mt-3" style="font-size: 12px;">
+        默认账号：admin / admin123
+      </p>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      utils.showLoading();
+
+      try {
+        const result = await http.post('/auth/admin/login', {
+          username,
+          password
+        });
+
+        utils.hideLoading();
+
+        if (result && result.success) {
+          // 保存token和管理员信息
+          localStorage.setItem('admin_token', result.data.token);
+          localStorage.setItem('admin_info', JSON.stringify(result.data.admin));
+
+          alert('登录成功！');
+          window.location.href = 'index.html';
+        } else {
+          alert(result?.message || '登录失败');
+        }
+      } catch (error) {
+        utils.hideLoading();
+        alert('登录失败：' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>

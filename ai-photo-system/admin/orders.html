@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单管理 - AI摄影系统管理后台</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-camera"></i> AI摄影系统</h3>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="index.html"><i class="fas fa-dashboard"></i> 仪表板</a></li>
+      <li><a href="users.html"><i class="fas fa-users"></i> 用户管理</a></li>
+      <li><a href="works.html"><i class="fas fa-images"></i> 作品管理</a></li>
+      <li><a href="tasks.html"><i class="fas fa-tasks"></i> 任务监控</a></li>
+      <li><a href="scenes.html"><i class="fas fa-palette"></i> 场景管理</a></li>
+      <li><a href="orders.html" class="active"><i class="fas fa-shopping-cart"></i> 订单管理</a></li>
+      <li><a href="config.html"><i class="fas fa-cog"></i> 系统配置</a></li>
+      <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>订单管理</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <!-- 统计卡片 -->
+      <div class="stats-grid mb-20">
+        <div class="stat-card success">
+          <div class="stat-card-content">
+            <h3 id="totalRevenue">¥0</h3>
+            <p>总收入</p>
+          </div>
+          <div class="stat-card-icon">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+        </div>
+
+        <div class="stat-card primary">
+          <div class="stat-card-content">
+            <h3 id="todayRevenue">¥0</h3>
+            <p>今日收入</p>
+          </div>
+          <div class="stat-card-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-card-content">
+            <h3 id="totalOrders">0</h3>
+            <p>总订单数</p>
+          </div>
+          <div class="stat-card-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
+        </div>
+
+        <div class="stat-card danger">
+          <div class="stat-card-content">
+            <h3 id="pendingOrders">0</h3>
+            <p>待支付</p>
+          </div>
+          <div class="stat-card-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选 -->
+      <div class="card mb-20">
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <select id="filterStatus" class="form-control" style="width: 150px;">
+            <option value="">全部状态</option>
+            <option value="pending">待支付</option>
+            <option value="paid">已支付</option>
+            <option value="cancelled">已取消</option>
+          </select>
+          <button class="btn btn-primary" onclick="filterOrders()">筛选</button>
+        </div>
+      </div>
+
+      <!-- 订单列表 -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>订单列表</h2>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>用户</th>
+                <th>金额</th>
+                <th>积分</th>
+                <th>支付方式</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>支付时间</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+              <tr>
+                <td colspan="8" class="text-center">加载中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-wrapper">
+          <div class="pagination-info" id="paginationInfo">显示 0 条记录</div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let totalPages = 1;
+
+    // 加载订单列表
+    async function loadOrders() {
+      utils.showLoading();
+
+      const status = document.getElementById('filterStatus').value;
+
+      const result = await http.get('/admin/orders', {
+        page: currentPage,
+        pageSize: pageSize,
+        status: status
+      });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const tbody = document.getElementById('ordersTableBody');
+        const data = result.data;
+
+        if (data.orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.orders.map(order => `
+          <tr>
+            <td>${order.order_no}</td>
+            <td>${order.nickname || '-'}</td>
+            <td>¥${order.amount.toFixed(2)}</td>
+            <td>${order.credits}</td>
+            <td><span class="badge badge-info">${order.payment_method === 'wechat' ? '微信' : '支付宝'}</span></td>
+            <td>${utils.getStatusBadge(order.status)}</td>
+            <td>${utils.formatDate(order.created_at)}</td>
+            <td>${order.paid_at ? utils.formatDate(order.paid_at) : '-'}</td>
+          </tr>
+        `).join('');
+
+        // 更新分页
+        totalPages = data.pagination.totalPages;
+        document.getElementById('paginationInfo').textContent =
+          `显示 ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data.pagination.total)} 条，共 ${data.pagination.total} 条`;
+
+        renderPagination();
+      }
+
+      // 加载统计
+      loadStats();
+    }
+
+    // 加载统计
+    async function loadStats() {
+      const result = await http.get('/admin/stats/overview');
+
+      if (result && result.success) {
+        const stats = result.data.orders;
+        document.getElementById('totalRevenue').textContent = `¥${(stats.total_revenue || 0).toFixed(2)}`;
+        document.getElementById('todayRevenue').textContent = `¥${(stats.today_revenue || 0).toFixed(2)}`;
+        document.getElementById('totalOrders').textContent = utils.formatNumber(stats.total_orders || 0);
+
+        // 计算待支付订单
+        const ordersResult = await http.get('/admin/orders', { status: 'pending', pageSize: 1 });
+        if (ordersResult && ordersResult.success) {
+          document.getElementById('pendingOrders').textContent = utils.formatNumber(ordersResult.data.pagination.total);
+        }
+      }
+    }
+
+    // 渲染分页
+    function renderPagination() {
+      const container = document.getElementById('pagination');
+      const pages = [];
+
+      if (currentPage > 1) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage - 1})">上一页</button>`);
+      }
+
+      pages.push(`<span style="margin: 0 10px;">第 ${currentPage}/${totalPages} 页</span>`);
+
+      if (currentPage < totalPages) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage + 1})">下一页</button>`);
+      }
+
+      container.innerHTML = pages.join('');
+    }
+
+    // 切换页码
+    function changePage(page) {
+      currentPage = page;
+      loadOrders();
+    }
+
+    // 筛选
+    function filterOrders() {
+      currentPage = 1;
+      loadOrders();
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrders();
+    });
+  </script>
+</body>
+</html>

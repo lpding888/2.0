@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统配置 - AI摄影系统管理后台</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-camera"></i> AI摄影系统</h3>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="index.html"><i class="fas fa-dashboard"></i> 仪表板</a></li>
+      <li><a href="users.html"><i class="fas fa-users"></i> 用户管理</a></li>
+      <li><a href="works.html"><i class="fas fa-images"></i> 作品管理</a></li>
+      <li><a href="tasks.html"><i class="fas fa-tasks"></i> 任务监控</a></li>
+      <li><a href="scenes.html"><i class="fas fa-palette"></i> 场景管理</a></li>
+      <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> 订单管理</a></li>
+      <li><a href="config.html" class="active"><i class="fas fa-cog"></i> 系统配置</a></li>
+      <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>系统配置</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <!-- 基础配置 -->
+      <div class="card mb-20">
+        <h3 style="margin-bottom: 20px;">基础配置</h3>
+        <div class="form-group">
+          <label>网站名称</label>
+          <input type="text" id="site_name" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>新用户默认积分</label>
+          <input type="number" id="default_credits" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>最大上传文件大小（MB）</label>
+          <input type="number" id="max_upload_size" class="form-control">
+        </div>
+        <button class="btn btn-primary" onclick="saveBasicConfig()">保存基础配置</button>
+      </div>
+
+      <!-- 批量处理配置 -->
+      <div class="card mb-20">
+        <h3 style="margin-bottom: 20px;">批量处理配置</h3>
+        <div class="form-group">
+          <label>最大批量生成数量</label>
+          <input type="number" id="max_batch_count" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>默认批量生成数量</label>
+          <input type="number" id="default_batch_count" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>队列并发数</label>
+          <input type="number" id="queue_concurrency" class="form-control">
+        </div>
+        <button class="btn btn-primary" onclick="saveBatchConfig()">保存批量配置</button>
+      </div>
+
+      <!-- AI配置 -->
+      <div class="card mb-20">
+        <h3 style="margin-bottom: 20px;">AI配置</h3>
+        <div class="form-group">
+          <label>AI API URL</label>
+          <input type="text" id="ai_api_url" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>默认温度参数（0-2）</label>
+          <input type="number" id="default_temperature" class="form-control" step="0.1" min="0" max="2">
+        </div>
+        <div class="form-group">
+          <label>默认topK参数</label>
+          <input type="number" id="default_topk" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>默认topP参数（0-1）</label>
+          <input type="number" id="default_topp" class="form-control" step="0.05" min="0" max="1">
+        </div>
+        <button class="btn btn-primary" onclick="saveAIConfig()">保存AI配置</button>
+      </div>
+
+      <!-- 系统信息 -->
+      <div class="card">
+        <h3 style="margin-bottom: 20px;">系统信息</h3>
+        <table class="table">
+          <tbody>
+            <tr>
+              <td><strong>系统版本</strong></td>
+              <td>v1.0.0</td>
+            </tr>
+            <tr>
+              <td><strong>Node.js版本</strong></td>
+              <td id="nodeVersion">-</td>
+            </tr>
+            <tr>
+              <td><strong>数据库版本</strong></td>
+              <td id="dbVersion">MySQL 8.0</td>
+            </tr>
+            <tr>
+              <td><strong>Redis版本</strong></td>
+              <td id="redisVersion">Redis 7.0</td>
+            </tr>
+            <tr>
+              <td><strong>服务器时间</strong></td>
+              <td id="serverTime">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    // 加载配置
+    async function loadConfig() {
+      utils.showLoading();
+
+      const result = await http.get('/admin/config');
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const configs = result.data.configs;
+
+        // 基础配置
+        document.getElementById('site_name').value = configs.site_name || '';
+        document.getElementById('default_credits').value = configs.default_credits || 10;
+        document.getElementById('max_upload_size').value = configs.max_upload_size || 10;
+
+        // 批量配置
+        document.getElementById('max_batch_count').value = configs.max_batch_count || 50;
+        document.getElementById('default_batch_count').value = configs.default_batch_count || 10;
+        document.getElementById('queue_concurrency').value = configs.queue_concurrency || 5;
+
+        // AI配置
+        document.getElementById('ai_api_url').value = configs.ai_api_url || '';
+        document.getElementById('default_temperature').value = configs.default_temperature || 1.0;
+        document.getElementById('default_topk').value = configs.default_topk || 40;
+        document.getElementById('default_topp').value = configs.default_topp || 0.95;
+      }
+
+      // 更新系统信息
+      updateSystemInfo();
+    }
+
+    // 保存基础配置
+    async function saveBasicConfig() {
+      const configs = {
+        site_name: document.getElementById('site_name').value,
+        default_credits: document.getElementById('default_credits').value,
+        max_upload_size: document.getElementById('max_upload_size').value
+      };
+
+      await saveConfigs(configs);
+    }
+
+    // 保存批量配置
+    async function saveBatchConfig() {
+      const configs = {
+        max_batch_count: document.getElementById('max_batch_count').value,
+        default_batch_count: document.getElementById('default_batch_count').value,
+        queue_concurrency: document.getElementById('queue_concurrency').value
+      };
+
+      await saveConfigs(configs);
+    }
+
+    // 保存AI配置
+    async function saveAIConfig() {
+      const configs = {
+        ai_api_url: document.getElementById('ai_api_url').value,
+        default_temperature: document.getElementById('default_temperature').value,
+        default_topk: document.getElementById('default_topk').value,
+        default_topp: document.getElementById('default_topp').value
+      };
+
+      await saveConfigs(configs);
+    }
+
+    // 保存配置（通用方法）
+    async function saveConfigs(configs) {
+      utils.showLoading();
+
+      let allSuccess = true;
+
+      for (const [key, value] of Object.entries(configs)) {
+        const result = await http.put(`/admin/config/${key}`, { config_value: value });
+        if (!result || !result.success) {
+          allSuccess = false;
+          break;
+        }
+      }
+
+      utils.hideLoading();
+
+      if (allSuccess) {
+        alert('保存成功');
+        loadConfig();
+      } else {
+        alert('保存失败，请重试');
+      }
+    }
+
+    // 更新系统信息
+    function updateSystemInfo() {
+      // 服务器时间
+      document.getElementById('serverTime').textContent = new Date().toLocaleString('zh-CN');
+
+      // Node.js版本（从健康检查接口获取）
+      fetch('/api/health')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // 这里可以添加更多系统信息
+          }
+        })
+        .catch(err => console.error('获取系统信息失败:', err));
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', () => {
+      loadConfig();
+
+      // 每分钟更新服务器时间
+      setInterval(() => {
+        document.getElementById('serverTime').textContent = new Date().toLocaleString('zh-CN');
+      }, 60000);
+    });
+  </script>
+</body>
+</html>

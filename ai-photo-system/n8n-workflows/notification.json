@@ -1,0 +1,210 @@
+{
+  "name": "消息通知工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "notification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-notification",
+      "name": "Webhook - 接收通知请求",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "notification"
+    },
+    {
+      "parameters": {
+        "functionCode": "// 解析通知数据\nconst notificationData = $json.body;\n\nconst {\n  type,\n  user_id,\n  title,\n  content,\n  data = {}\n} = notificationData;\n\n// 返回格式化的通知数据\nreturn [{\n  json: {\n    type,\n    user_id,\n    title,\n    content,\n    data,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "function-parse",
+      "name": "Function - 解析通知数据",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.type}}",
+              "operation": "equals",
+              "value2": "email"
+            }
+          ]
+        }
+      },
+      "id": "switch-notification-type",
+      "name": "Switch - 通知类型",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{$env.BACKEND_URL}}/api/internal/websocket/send",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Internal-Secret",
+              "value": "={{$env.INTERNAL_SECRET}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "jsonBody": "={\n  \"user_id\": \"{{$json.user_id}}\",\n  \"message\": {\n    \"type\": \"notification\",\n    \"title\": \"{{$json.title}}\",\n    \"content\": \"{{$json.content}}\",\n    \"data\": {{JSON.stringify($json.data)}}\n  }\n}",
+        "options": {}
+      },
+      "id": "http-websocket",
+      "name": "HTTP Request - WebSocket推送",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "=noreply@{{$env.EMAIL_DOMAIN}}",
+        "toEmail": "={{$json.email}}",
+        "subject": "={{$json.title}}",
+        "emailType": "html",
+        "message": "={{$json.content}}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email - 发送邮件",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 400],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-config",
+          "name": "SMTP配置"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"通知已发送\",\n  \"timestamp\": \"{{$json.timestamp}}\"\n}",
+        "options": {}
+      },
+      "id": "respond-webhook-success",
+      "name": "Respond to Webhook - 成功",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"message\": \"通知发送失败\",\n  \"error\": \"{{$json.message}}\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "respond-webhook-error",
+      "name": "Respond to Webhook - 失败",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 500]
+    }
+  ],
+  "connections": {
+    "Webhook - 接收通知请求": {
+      "main": [
+        [
+          {
+            "node": "Function - 解析通知数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - 解析通知数据": {
+      "main": [
+        [
+          {
+            "node": "Switch - 通知类型",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - 通知类型": {
+      "main": [
+        [
+          {
+            "node": "Send Email - 发送邮件",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - WebSocket推送",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - WebSocket推送": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - 成功",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook - 失败",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email - 发送邮件": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - 成功",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook - 失败",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-10-12T00:00:00.000Z",
+  "versionId": "1"
+}

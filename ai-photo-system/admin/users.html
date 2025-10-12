@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 - AI摄影系统管理后台</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-camera"></i> AI摄影系统</h3>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="index.html"><i class="fas fa-dashboard"></i> 仪表板</a></li>
+      <li><a href="users.html" class="active"><i class="fas fa-users"></i> 用户管理</a></li>
+      <li><a href="works.html"><i class="fas fa-images"></i> 作品管理</a></li>
+      <li><a href="tasks.html"><i class="fas fa-tasks"></i> 任务监控</a></li>
+      <li><a href="scenes.html"><i class="fas fa-palette"></i> 场景管理</a></li>
+      <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> 订单管理</a></li>
+      <li><a href="config.html"><i class="fas fa-cog"></i> 系统配置</a></li>
+      <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>用户管理</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <!-- 搜索和筛选 -->
+      <div class="card mb-20">
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <input type="text" id="searchKeyword" class="form-control" placeholder="搜索用户（昵称/OpenID）" style="flex: 1;">
+          <select id="filterRole" class="form-control" style="width: 150px;">
+            <option value="">全部角色</option>
+            <option value="user">普通用户</option>
+            <option value="vip">VIP用户</option>
+            <option value="admin">管理员</option>
+          </select>
+          <select id="filterStatus" class="form-control" style="width: 150px;">
+            <option value="">全部状态</option>
+            <option value="active">激活</option>
+            <option value="inactive">禁用</option>
+          </select>
+          <button class="btn btn-primary" onclick="searchUsers()">搜索</button>
+        </div>
+      </div>
+
+      <!-- 用户列表 -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>用户列表</h2>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>用户ID</th>
+                <th>昵称</th>
+                <th>OpenID</th>
+                <th>角色</th>
+                <th>积分</th>
+                <th>状态</th>
+                <th>注册时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="8" class="text-center">加载中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-wrapper">
+          <div class="pagination-info" id="paginationInfo">显示 0 条记录</div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑用户模态框 -->
+  <div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">编辑用户</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editUserId">
+          <div class="form-group">
+            <label>昵称</label>
+            <input type="text" id="editNickname" class="form-control" readonly>
+          </div>
+          <div class="form-group">
+            <label>角色</label>
+            <select id="editRole" class="form-control">
+              <option value="user">普通用户</option>
+              <option value="vip">VIP用户</option>
+              <option value="admin">管理员</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>状态</label>
+            <select id="editStatus" class="form-control">
+              <option value="active">激活</option>
+              <option value="inactive">禁用</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>当前积分</label>
+            <input type="text" id="currentCredits" class="form-control" readonly>
+          </div>
+          <div class="form-group">
+            <label>积分调整（正数增加，负数减少）</label>
+            <input type="number" id="creditsAdjustment" class="form-control" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>调整原因</label>
+            <input type="text" id="adjustmentReason" class="form-control" placeholder="例：活动赠送、违规扣除">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveUser()">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let totalPages = 1;
+
+    // 加载用户列表
+    async function loadUsers() {
+      utils.showLoading();
+
+      const keyword = document.getElementById('searchKeyword').value;
+      const role = document.getElementById('filterRole').value;
+      const status = document.getElementById('filterStatus').value;
+
+      const result = await http.get('/admin/users', {
+        page: currentPage,
+        pageSize: pageSize,
+        keyword: keyword,
+        role: role,
+        status: status
+      });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const tbody = document.getElementById('usersTableBody');
+        const data = result.data;
+
+        if (data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.users.map(user => `
+          <tr>
+            <td>${user.user_id}</td>
+            <td>${user.nickname || '-'}</td>
+            <td>${user.openid.substring(0, 10)}...</td>
+            <td><span class="badge ${user.role === 'admin' ? 'badge-danger' : user.role === 'vip' ? 'badge-warning' : 'badge-info'}">${user.role}</span></td>
+            <td>${user.credits}</td>
+            <td>${utils.getStatusBadge(user.status)}</td>
+            <td>${utils.formatDate(user.created_at)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="editUser('${user.user_id}')">编辑</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 更新分页
+        totalPages = data.pagination.totalPages;
+        document.getElementById('paginationInfo').textContent =
+          `显示 ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data.pagination.total)} 条，共 ${data.pagination.total} 条`;
+
+        renderPagination();
+      }
+    }
+
+    // 渲染分页
+    function renderPagination() {
+      const container = document.getElementById('pagination');
+      const pages = [];
+
+      if (currentPage > 1) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage - 1})">上一页</button>`);
+      }
+
+      pages.push(`<span style="margin: 0 10px;">第 ${currentPage}/${totalPages} 页</span>`);
+
+      if (currentPage < totalPages) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage + 1})">下一页</button>`);
+      }
+
+      container.innerHTML = pages.join('');
+    }
+
+    // 切换页码
+    function changePage(page) {
+      currentPage = page;
+      loadUsers();
+    }
+
+    // 搜索用户
+    function searchUsers() {
+      currentPage = 1;
+      loadUsers();
+    }
+
+    // 编辑用户
+    async function editUser(userId) {
+      utils.showLoading();
+
+      const result = await http.get(`/admin/users?user_id=${userId}`);
+
+      utils.hideLoading();
+
+      if (result && result.success && result.data.users.length > 0) {
+        const user = result.data.users[0];
+
+        document.getElementById('editUserId').value = user.user_id;
+        document.getElementById('editNickname').value = user.nickname || '';
+        document.getElementById('editRole').value = user.role;
+        document.getElementById('editStatus').value = user.status;
+        document.getElementById('currentCredits').value = user.credits;
+        document.getElementById('creditsAdjustment').value = 0;
+        document.getElementById('adjustmentReason').value = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+        modal.show();
+      }
+    }
+
+    // 保存用户
+    async function saveUser() {
+      const userId = document.getElementById('editUserId').value;
+      const role = document.getElementById('editRole').value;
+      const status = document.getElementById('editStatus').value;
+      const creditsAdjustment = parseInt(document.getElementById('creditsAdjustment').value) || 0;
+      const adjustmentReason = document.getElementById('adjustmentReason').value;
+
+      if (creditsAdjustment !== 0 && !adjustmentReason) {
+        alert('调整积分时必须填写原因');
+        return;
+      }
+
+      utils.showLoading();
+
+      const result = await http.put(`/admin/users/${userId}`, {
+        role: role,
+        status: status,
+        credits_adjustment: creditsAdjustment,
+        adjustment_reason: adjustmentReason
+      });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        alert('保存成功');
+        bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+        loadUsers();
+      }
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+
+      // 搜索框回车
+      document.getElementById('searchKeyword').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          searchUsers();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

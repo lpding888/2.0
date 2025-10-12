@@ -1,0 +1,261 @@
+{
+  "name": "AI试衣间批量生成",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "fitting-batch",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-fitting",
+      "name": "Webhook - 接收请求",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "fitting-batch"
+    },
+    {
+      "parameters": {
+        "functionCode": "// 解析请求数据\nconst taskData = $json.body;\n\nconst {\n  task_id,\n  user_id,\n  images,\n  prompt,\n  parameters = {},\n  batch_count = 1\n} = taskData;\n\n// 准备AI请求参数\nconst aiRequests = [];\n\nfor (let i = 0; i < batch_count; i++) {\n  aiRequests.push({\n    task_id,\n    user_id,\n    batch_index: i + 1,\n    prompt,\n    images,\n    parameters\n  });\n}\n\n// 返回批处理数组\nreturn aiRequests.map(req => ({ json: req }));"
+      },
+      "id": "function-prepare",
+      "name": "Function - 准备批处理数据",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AI_API_URL}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"{{$json.prompt}}\"\n        },\n        {{$json.images.map(img => `{\n          \"inline_data\": {\n            \"mime_type\": \"image/jpeg\",\n            \"data\": \"${img}\"\n          }\n        }`).join(',')}}\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": {{$json.parameters.temperature || 1.0}},\n    \"topK\": {{$json.parameters.topK || 40}},\n    \"topP\": {{$json.parameters.topP || 0.95}},\n    \"candidateCount\": 1,\n    \"maxOutputTokens\": 8192\n  },\n  \"safetySettings\": [\n    {\n      \"category\": \"HARM_CATEGORY_HARASSMENT\",\n      \"threshold\": \"BLOCK_MEDIUM_AND_ABOVE\"\n    }\n  ],\n  \"responseModalities\": [\"IMAGE\"]\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-request-ai",
+      "name": "HTTP Request - 调用AI API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ai-api-key",
+          "name": "AI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// 解析AI响应\nconst response = $json;\nconst task_id = $node[\"Function - 准备批处理数据\"].json.task_id;\nconst batch_index = $node[\"Function - 准备批处理数据\"].json.batch_index;\n\n// 提取生成的图片\nlet images = [];\nlet ai_description = '';\n\nif (response.candidates && response.candidates.length > 0) {\n  const candidate = response.candidates[0];\n  \n  // 提取图片\n  if (candidate.content && candidate.content.parts) {\n    candidate.content.parts.forEach(part => {\n      if (part.inline_data && part.inline_data.data) {\n        images.push({\n          url: `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`,\n          format: part.inline_data.mime_type.split('/')[1],\n          batch_index: batch_index\n        });\n      }\n      \n      // 提取文字描述\n      if (part.text) {\n        ai_description += part.text;\n      }\n    });\n  }\n}\n\n// 返回处理后的数据\nreturn [{\n  json: {\n    task_id,\n    batch_index,\n    images,\n    ai_description,\n    success: images.length > 0,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "function-parse",
+      "name": "Function - 解析AI响应",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "results",
+        "options": {}
+      },
+      "id": "aggregate",
+      "name": "Aggregate - 合并结果",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{$env.BACKEND_URL}}/api/callback/task-complete",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "jsonBody": "={\n  \"task_id\": \"{{$json.results[0].task_id}}\",\n  \"images\": {{JSON.stringify($json.results.flatMap(r => r.images))}},\n  \"ai_description\": \"{{$json.results[0].ai_description}}\"\n}",
+        "options": {}
+      },
+      "id": "http-request-callback",
+      "name": "HTTP Request - 回调后端",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"批量生成任务已完成\",\n  \"data\": {\n    \"task_id\": \"{{$json.results[0].task_id}}\",\n    \"total_images\": {{$json.results.flatMap(r => r.images).length}},\n    \"batch_count\": {{$json.results.length}}\n  }\n}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{$env.BACKEND_URL}}/api/callback/task-failed",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "jsonBody": "={\n  \"task_id\": \"{{$node[\\\"Function - 准备批处理数据\\\"].json.task_id}}\",\n  \"error\": \"{{$json.message || '未知错误'}}\"\n}",
+        "options": {}
+      },
+      "id": "http-request-error",
+      "name": "HTTP Request - 错误回调",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"message\": \"任务执行失败\",\n  \"error\": \"{{$json.message}}\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "respond-webhook-error",
+      "name": "Respond to Webhook (Error)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 500]
+    }
+  ],
+  "connections": {
+    "Webhook - 接收请求": {
+      "main": [
+        [
+          {
+            "node": "Function - 准备批处理数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - 准备批处理数据": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - 调用AI API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - 调用AI API": {
+      "main": [
+        [
+          {
+            "node": "Function - 解析AI响应",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - 错误回调",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - 解析AI响应": {
+      "main": [
+        [
+          {
+            "node": "Aggregate - 合并结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate - 合并结果": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - 回调后端",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - 回调后端": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - 错误回调": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (Error)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-10-12T00:00:00.000Z",
+  "versionId": "1"
+}

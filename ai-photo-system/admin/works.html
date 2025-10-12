@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作品管理 - AI摄影系统管理后台</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-camera"></i> AI摄影系统</h3>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="index.html"><i class="fas fa-dashboard"></i> 仪表板</a></li>
+      <li><a href="users.html"><i class="fas fa-users"></i> 用户管理</a></li>
+      <li><a href="works.html" class="active"><i class="fas fa-images"></i> 作品管理</a></li>
+      <li><a href="tasks.html"><i class="fas fa-tasks"></i> 任务监控</a></li>
+      <li><a href="scenes.html"><i class="fas fa-palette"></i> 场景管理</a></li>
+      <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> 订单管理</a></li>
+      <li><a href="config.html"><i class="fas fa-cog"></i> 系统配置</a></li>
+      <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>作品管理</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar">A</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <!-- 筛选 -->
+      <div class="card mb-20">
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <select id="filterType" class="form-control" style="width: 150px;">
+            <option value="">全部类型</option>
+            <option value="fitting">试衣间</option>
+            <option value="photography">摄影</option>
+            <option value="travel">旅行</option>
+          </select>
+          <select id="filterStatus" class="form-control" style="width: 150px;">
+            <option value="">全部状态</option>
+            <option value="pending">待处理</option>
+            <option value="processing">处理中</option>
+            <option value="completed">已完成</option>
+            <option value="failed">失败</option>
+          </select>
+          <button class="btn btn-primary" onclick="filterWorks()">筛选</button>
+          <button class="btn btn-danger" onclick="batchDelete()" style="margin-left: auto;">批量删除</button>
+        </div>
+      </div>
+
+      <!-- 作品列表 -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>作品列表</h2>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                <th>作品ID</th>
+                <th>用户</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>图片数量</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="worksTableBody">
+              <tr>
+                <td colspan="8" class="text-center">加载中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-wrapper">
+          <div class="pagination-info" id="paginationInfo">显示 0 条记录</div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看作品模态框 -->
+  <div class="modal fade" id="viewWorkModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">作品详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="workDetail"></div>
+          <div id="workImages" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let totalPages = 1;
+    let selectedWorks = new Set();
+
+    // 加载作品列表
+    async function loadWorks() {
+      utils.showLoading();
+
+      const type = document.getElementById('filterType').value;
+      const status = document.getElementById('filterStatus').value;
+
+      const result = await http.get('/admin/works', {
+        page: currentPage,
+        pageSize: pageSize,
+        type: type,
+        status: status
+      });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const tbody = document.getElementById('worksTableBody');
+        const data = result.data;
+
+        if (data.works.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.works.map(work => `
+          <tr>
+            <td><input type="checkbox" class="work-checkbox" value="${work.work_id}" ${selectedWorks.has(work.work_id) ? 'checked' : ''}></td>
+            <td>${work.work_id}</td>
+            <td>${work.nickname || '-'}</td>
+            <td><span class="badge badge-info">${work.type}</span></td>
+            <td>${utils.getStatusBadge(work.status)}</td>
+            <td>${work.images ? JSON.parse(work.images).length : 0}</td>
+            <td>${utils.formatDate(work.created_at)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="viewWork('${work.work_id}')">查看</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteWork('${work.work_id}')">删除</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // 绑定checkbox事件
+        document.querySelectorAll('.work-checkbox').forEach(cb => {
+          cb.addEventListener('change', (e) => {
+            if (e.target.checked) {
+              selectedWorks.add(e.target.value);
+            } else {
+              selectedWorks.delete(e.target.value);
+            }
+          });
+        });
+
+        // 更新分页
+        totalPages = data.pagination.totalPages;
+        document.getElementById('paginationInfo').textContent =
+          `显示 ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data.pagination.total)} 条，共 ${data.pagination.total} 条`;
+
+        renderPagination();
+      }
+    }
+
+    // 渲染分页
+    function renderPagination() {
+      const container = document.getElementById('pagination');
+      const pages = [];
+
+      if (currentPage > 1) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage - 1})">上一页</button>`);
+      }
+
+      pages.push(`<span style="margin: 0 10px;">第 ${currentPage}/${totalPages} 页</span>`);
+
+      if (currentPage < totalPages) {
+        pages.push(`<button class="btn btn-sm btn-outline-primary" onclick="changePage(${currentPage + 1})">下一页</button>`);
+      }
+
+      container.innerHTML = pages.join('');
+    }
+
+    // 切换页码
+    function changePage(page) {
+      currentPage = page;
+      loadWorks();
+    }
+
+    // 筛选
+    function filterWorks() {
+      currentPage = 1;
+      loadWorks();
+    }
+
+    // 全选
+    function toggleSelectAll() {
+      const checked = document.getElementById('selectAll').checked;
+      document.querySelectorAll('.work-checkbox').forEach(cb => {
+        cb.checked = checked;
+        if (checked) {
+          selectedWorks.add(cb.value);
+        } else {
+          selectedWorks.delete(cb.value);
+        }
+      });
+    }
+
+    // 查看作品
+    async function viewWork(workId) {
+      utils.showLoading();
+
+      const result = await http.get(`/works/${workId}`);
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        const work = result.data.work;
+
+        document.getElementById('workDetail').innerHTML = `
+          <p><strong>作品ID:</strong> ${work.work_id}</p>
+          <p><strong>类型:</strong> ${work.type}</p>
+          <p><strong>状态:</strong> ${work.status}</p>
+          <p><strong>创建时间:</strong> ${utils.formatDate(work.created_at)}</p>
+          ${work.ai_description ? `<p><strong>AI描述:</strong> ${work.ai_description}</p>` : ''}
+        `;
+
+        const images = work.images ? JSON.parse(work.images) : [];
+        document.getElementById('workImages').innerHTML = images.map(img => `
+          <img src="${img.url}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+        `).join('');
+
+        const modal = new bootstrap.Modal(document.getElementById('viewWorkModal'));
+        modal.show();
+      }
+    }
+
+    // 删除作品
+    async function deleteWork(workId) {
+      if (!confirm('确定要删除这个作品吗？')) return;
+
+      utils.showLoading();
+
+      const result = await http.delete(`/admin/works/${workId}`);
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        alert('删除成功');
+        loadWorks();
+      }
+    }
+
+    // 批量删除
+    async function batchDelete() {
+      if (selectedWorks.size === 0) {
+        alert('请先选择要删除的作品');
+        return;
+      }
+
+      if (!confirm(`确定要删除选中的 ${selectedWorks.size} 个作品吗？`)) return;
+
+      utils.showLoading();
+
+      const workIds = Array.from(selectedWorks);
+      const result = await http.post('/works/batch/delete', { work_ids: workIds });
+
+      utils.hideLoading();
+
+      if (result && result.success) {
+        alert('批量删除成功');
+        selectedWorks.clear();
+        document.getElementById('selectAll').checked = false;
+        loadWorks();
+      }
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWorks();
+    });
+  </script>
+</body>
+</html>
