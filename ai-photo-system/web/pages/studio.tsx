@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useUserStore, useTaskStore, useUploadStore } from '../lib/store';
 import { scenesAPI, tasksAPI, uploadAPI } from '../lib/api';
 import { toast } from 'react-hot-toast';
-import { websocketManager } from '../lib/websocket';
+import { wsManager } from '../lib/websocket';
 
 interface Scene {
   scene_id: string;
@@ -67,14 +67,14 @@ export default function StudioPage() {
       setCurrentTasks(prev => prev.filter(id => id !== data.task_id));
     };
 
-    websocketManager.on('task_progress', handleTaskProgress);
-    websocketManager.on('task_complete', handleTaskComplete);
-    websocketManager.on('task_failed', handleTaskFailed);
+    wsManager.on('task_progress', handleTaskProgress);
+    wsManager.on('task_complete', handleTaskComplete);
+    wsManager.on('task_failed', handleTaskFailed);
 
     return () => {
-      websocketManager.off('task_progress', handleTaskProgress);
-      websocketManager.off('task_complete', handleTaskComplete);
-      websocketManager.off('task_failed', handleTaskFailed);
+      wsManager.off('task_progress', handleTaskProgress);
+      wsManager.off('task_complete', handleTaskComplete);
+      wsManager.off('task_failed', handleTaskFailed);
     };
   }, [token, updateTask]);
 
@@ -162,9 +162,9 @@ export default function StudioPage() {
 
     try {
       // 上传图片
-      const uploadPromises = files.map(file => {
+      const uploadPromises = files.map(uploadFile => {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', uploadFile.file);
         return uploadAPI.single(formData);
       });
 
@@ -388,22 +388,22 @@ export default function StudioPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
-                      {files.map((file, index) => (
-                        <div key={index} className="relative group">
+                      {files.map((uploadFile) => (
+                        <div key={uploadFile.id} className="relative group">
                           <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
                             <img
-                              src={URL.createObjectURL(file)}
-                              alt={file.name}
+                              src={uploadFile.preview}
+                              alt={uploadFile.file.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <button
-                            onClick={() => removeFile(index)}
+                            onClick={() => removeFile(uploadFile.id)}
                             className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                           >
                             ×
                           </button>
-                          <div className="text-xs text-gray-600 mt-1 truncate">{file.name}</div>
+                          <div className="text-xs text-gray-600 mt-1 truncate">{uploadFile.file.name}</div>
                         </div>
                       ))}
                     </div>

@@ -1,0 +1,576 @@
+{
+  "name": "AI摄影队列处理器",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtSecond": 30
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "每30秒触发",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/api",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "getPendingTasks"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "get-pending-tasks",
+      "name": "获取待处理任务",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-tasks",
+              "leftValue": "={{$json.success}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "tasks-not-empty",
+              "leftValue": "={{$json.data?.tasks?.length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-tasks",
+      "name": "检查是否有任务",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "stop-no-tasks",
+      "name": "无任务-结束",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [910, 480]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-tasks",
+      "name": "循环处理任务",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [910, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析任务数据\nconst task = $input.item.json.data.tasks[$input.item.json.batchIndex];\n\nreturn {\n  taskId: task._id,\n  userId: task.user_openid,\n  type: task.type,\n  params: task.params,\n  images: task.params.images || [],\n  sceneId: task.params.sceneId,\n  sceneInfo: task.params.sceneInfo,\n  parameters: task.params.parameters || {}\n};"
+      },
+      "id": "parse-task",
+      "name": "解析任务数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/api",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "getTempFileURLs"
+            },
+            {
+              "name": "fileIds",
+              "value": "={{$json.images}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "get-temp-urls",
+      "name": "获取图片临时URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 120]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.data.tempUrls[0]}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-image",
+      "name": "下载服装图片",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1570, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "enable-bg-removal",
+              "leftValue": "={{$env.ENABLE_BG_REMOVAL}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-bg-removal",
+      "name": "是否启用背景移除",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1790, 120]
+    },
+    {
+      "parameters": {
+        "url": "http://{{$env.REMBG_HOST}}:7000/api/remove",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "inputDataFieldName": "data",
+              "parameterType": "formBinaryData"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "remove-background",
+      "name": "Rembg背景移除",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 跳过背景移除，直接使用原图\nreturn $input.all();"
+      },
+      "id": "skip-bg-removal",
+      "name": "跳过背景移除",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2010, 240]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-bg-paths",
+      "name": "合并分支",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2230, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 准备AI生成请求数据\nconst taskData = $input.first().json;\nconst imageData = $input.item.binary.data;\n\n// 将图片转换为base64\nconst base64Image = imageData.toString('base64');\nconst mimeType = imageData.mimeType || 'image/jpeg';\n\nreturn {\n  taskId: taskData.taskId,\n  userId: taskData.userId,\n  prompt: taskData.params.prompt || '',\n  parameters: taskData.parameters,\n  sceneInfo: taskData.sceneInfo,\n  imageBase64: `data:${mimeType};base64,${base64Image}`,\n  originalParams: taskData.params\n};"
+      },
+      "id": "prepare-ai-request",
+      "name": "准备AI请求",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2450, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/prompt",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "generatePrompt"
+            },
+            {
+              "name": "type",
+              "value": "photography"
+            },
+            {
+              "name": "parameters",
+              "value": "={{$json.parameters}}"
+            },
+            {
+              "name": "sceneInfo",
+              "value": "={{$json.sceneInfo}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "generate-prompt",
+      "name": "生成AI提示词",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2670, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "={{$env.GEMINI_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "={\n  \"parts\": [\n    {\n      \"text\": \"{{$json.data.prompt}}\"\n    },\n    {\n      \"inline_data\": {\n        \"mime_type\": \"{{$json.imageBase64.split(';')[0].split(':')[1]}}\",\n        \"data\": \"{{$json.imageBase64.split(',')[1]}}\"\n      }\n    }\n  ]\n}"
+            },
+            {
+              "name": "generationConfig",
+              "value": "={\n  \"temperature\": 0.7,\n  \"topK\": 40,\n  \"topP\": 0.95,\n  \"maxOutputTokens\": 8192,\n  \"responseMimeType\": \"application/json\"\n}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "call-gemini-ai",
+      "name": "调用Gemini AI生成",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2890, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析AI返回的图片数据\nconst response = $input.item.json;\n\n// 提取生成的图片（假设AI返回base64图片）\nconst generatedImage = response.candidates?.[0]?.content?.parts?.[0]?.text || '';\n\nreturn {\n  taskId: $input.first().json.taskId,\n  userId: $input.first().json.userId,\n  generatedImage: generatedImage,\n  aiResponse: response\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "解析AI响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3110, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/api",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "uploadGeneratedImage"
+            },
+            {
+              "name": "taskId",
+              "value": "={{$json.taskId}}"
+            },
+            {
+              "name": "imageData",
+              "value": "={{$json.generatedImage}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "upload-result",
+      "name": "上传生成结果",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3330, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/api",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "nasCallback"
+            },
+            {
+              "name": "taskId",
+              "value": "={{$json.taskId}}"
+            },
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "result",
+              "value": "={{$json}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "callback-success",
+      "name": "回调-任务完成",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3550, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 检查是否还有更多任务\nreturn $input.all();"
+      },
+      "id": "check-next-task",
+      "name": "检查下一个任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3770, 120]
+    },
+    {
+      "parameters": {
+        "url": "https://{{$env.CLOUD_FUNCTION_URL}}/api",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NAS-Secret",
+              "value": "={{$env.NAS_SECRET_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "nasCallback"
+            },
+            {
+              "name": "taskId",
+              "value": "={{$json.taskId}}"
+            },
+            {
+              "name": "status",
+              "value": "failed"
+            },
+            {
+              "name": "error",
+              "value": "={{$json.error}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "callback-error",
+      "name": "回调-任务失败",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3110, 360]
+    }
+  ],
+  "connections": {
+    "每30秒触发": {
+      "main": [[{ "node": "获取待处理任务", "type": "main", "index": 0 }]]
+    },
+    "获取待处理任务": {
+      "main": [[{ "node": "检查是否有任务", "type": "main", "index": 0 }]]
+    },
+    "检查是否有任务": {
+      "main": [
+        [{ "node": "循环处理任务", "type": "main", "index": 0 }],
+        [{ "node": "无任务-结束", "type": "main", "index": 0 }]
+      ]
+    },
+    "循环处理任务": {
+      "main": [[{ "node": "解析任务数据", "type": "main", "index": 0 }]]
+    },
+    "解析任务数据": {
+      "main": [[{ "node": "获取图片临时URL", "type": "main", "index": 0 }]]
+    },
+    "获取图片临时URL": {
+      "main": [[{ "node": "下载服装图片", "type": "main", "index": 0 }]]
+    },
+    "下载服装图片": {
+      "main": [[{ "node": "是否启用背景移除", "type": "main", "index": 0 }]]
+    },
+    "是否启用背景移除": {
+      "main": [
+        [{ "node": "Rembg背景移除", "type": "main", "index": 0 }],
+        [{ "node": "跳过背景移除", "type": "main", "index": 0 }]
+      ]
+    },
+    "Rembg背景移除": {
+      "main": [[{ "node": "合并分支", "type": "main", "index": 0 }]]
+    },
+    "跳过背景移除": {
+      "main": [[{ "node": "合并分支", "type": "main", "index": 1 }]]
+    },
+    "合并分支": {
+      "main": [[{ "node": "准备AI请求", "type": "main", "index": 0 }]]
+    },
+    "准备AI请求": {
+      "main": [[{ "node": "生成AI提示词", "type": "main", "index": 0 }]]
+    },
+    "生成AI提示词": {
+      "main": [[{ "node": "调用Gemini AI生成", "type": "main", "index": 0 }]]
+    },
+    "调用Gemini AI生成": {
+      "main": [
+        [{ "node": "解析AI响应", "type": "main", "index": 0 }],
+        [{ "node": "回调-任务失败", "type": "main", "index": 0 }]
+      ]
+    },
+    "解析AI响应": {
+      "main": [[{ "node": "上传生成结果", "type": "main", "index": 0 }]]
+    },
+    "上传生成结果": {
+      "main": [[{ "node": "回调-任务完成", "type": "main", "index": 0 }]]
+    },
+    "回调-任务完成": {
+      "main": [[{ "node": "检查下一个任务", "type": "main", "index": 0 }]]
+    },
+    "检查下一个任务": {
+      "main": [[{ "node": "循环处理任务", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-11T00:00:00.000Z",
+  "versionId": "1"
+}

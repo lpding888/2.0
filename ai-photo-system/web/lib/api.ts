@@ -151,6 +151,9 @@ export const tasksAPI = {
   createTask: (data: any) => {
     return apiClient.post('/tasks/create', data);
   },
+  create: (data: any) => {
+    return apiClient.post('/tasks/create', data);
+  },
 
   // 获取任务状态
   getTaskStatus: (taskId: string) => {
@@ -166,11 +169,17 @@ export const tasksAPI = {
   cancelTask: (taskId: string) => {
     return apiClient.post(`/tasks/${taskId}/cancel`);
   },
+  cancel: (taskId: string) => {
+    return apiClient.post(`/tasks/${taskId}/cancel`);
+  },
 };
 
 export const scenesAPI = {
   // 获取场景列表
   getScenes: (params?: any) => {
+    return apiClient.get('/scenes', { params });
+  },
+  list: (params?: any) => {
     return apiClient.get('/scenes', { params });
   },
 
@@ -185,6 +194,9 @@ export const uploadAPI = {
   uploadSingle: (file: File, onProgress?: (progress: number) => void) => {
     const formData = new FormData();
     formData.append('file', file);
+    return apiClient.upload('/upload/single', formData, onProgress);
+  },
+  single: (formData: FormData, onProgress?: (progress: number) => void) => {
     return apiClient.upload('/upload/single', formData, onProgress);
   },
 

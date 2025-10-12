@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -86,10 +87,34 @@
         </div>
       </div>
 
+      <!-- 数据可视化图表 -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="table-container">
+            <div class="table-header">
+              <h2><i class="fas fa-chart-line"></i> 数据趋势</h2>
+            </div>
+            <div class="p-4">
+              <canvas id="trendChart" height="80"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="table-container">
+            <div class="table-header">
+              <h2><i class="fas fa-chart-pie"></i> 作品分布</h2>
+            </div>
+            <div class="p-4">
+              <canvas id="distributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 最近活动 -->
       <div class="table-container">
         <div class="table-header">
-          <h2>最近作品</h2>
+          <h2><i class="fas fa-images"></i> 最近作品</h2>
         </div>
         <div class="table-responsive">
           <table>
@@ -158,10 +183,139 @@
       }
     }
 
+    // 初始化趋势图
+    let trendChart = null;
+    function initTrendChart() {
+      const ctx = document.getElementById('trendChart');
+      if (!ctx) return;
+
+      // 模拟7天数据
+      const labels = [];
+      const userData = [];
+      const workData = [];
+      const today = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+        userData.push(Math.floor(Math.random() * 50) + 20);
+        workData.push(Math.floor(Math.random() * 100) + 50);
+      }
+
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '新增用户',
+              data: userData,
+              borderColor: '#465C88',
+              backgroundColor: 'rgba(70, 92, 136, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '新增作品',
+              data: workData,
+              borderColor: '#FF7A30',
+              backgroundColor: 'rgba(255, 122, 48, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          }
+        }
+      });
+    }
+
+    // 初始化分布图
+    let distributionChart = null;
+    function initDistributionChart() {
+      const ctx = document.getElementById('distributionChart');
+      if (!ctx) return;
+
+      distributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['AI试衣间', 'AI摄影', '全球旅行'],
+          datasets: [{
+            data: [35, 45, 20],
+            backgroundColor: [
+              'rgba(70, 92, 136, 0.8)',
+              'rgba(255, 122, 48, 0.8)',
+              'rgba(74, 144, 226, 0.8)'
+            ],
+            borderColor: [
+              '#465C88',
+              '#FF7A30',
+              '#4A90E2'
+            ],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
     // 页面加载
     document.addEventListener('DOMContentLoaded', () => {
       loadStats();
       loadRecentWorks();
+      initTrendChart();
+      initDistributionChart();
 
       // 每30秒刷新一次
       setInterval(loadStats, 30000);

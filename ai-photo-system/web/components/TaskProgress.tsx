@@ -1,19 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useTaskStore } from '../lib/store';
+import { useTaskStore, Task } from '../lib/store';
 import { wsManager } from '../lib/websocket';
 import { tasksAPI } from '../lib/api';
 import { toast } from 'react-hot-toast';
-
-interface Task {
-  task_id: string;
-  type: string;
-  status: string;
-  progress: number;
-  message?: string;
-  result?: any;
-  error?: string;
-  created_at: string;
-}
 
 interface TaskProgressProps {
   taskId?: string; // 如果指定，只显示该任务；否则显示所有任务

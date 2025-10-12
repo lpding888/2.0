@@ -1,9 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "FileEdit(*.js,*.ts,*.json,*.md)",
-      "Bash(npm:*,git:*)"
-    ],
+    "allow": [],
     "deny": [],
     "ask": []
   }

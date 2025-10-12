@@ -27,13 +27,15 @@ export const useUserStore = create<UserState>()(
 );
 
 // 任务状态
-interface Task {
+export interface Task {
   task_id: string;
   type: string;
   status: string;
   progress: number;
-  message: string;
+  message?: string;
   result?: any;
+  error?: string;
+  created_at: string;
 }
 
 interface TaskState {

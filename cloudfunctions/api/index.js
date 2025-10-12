@@ -34,6 +34,33 @@ exports.main = async (event, context) => {
   try {
     console.log('API云函数调用:', action)
 
+    // 🔐 NAS专用接口（需要密钥认证，不需要OPENID）
+    const nasActions = ['getPendingTasks', 'getTempFileURLs', 'uploadGeneratedImage', 'nasCallback']
+    if (nasActions.includes(action)) {
+      // 验证NAS密钥
+      const nasSecret = event.nasSecret || event.headers?.['x-nas-secret']
+      const expectedSecret = process.env.NAS_SECRET_KEY || 'default-secret-key-change-me'
+
+      if (nasSecret !== expectedSecret) {
+        return {
+          success: false,
+          message: 'NAS认证失败'
+        }
+      }
+
+      // 处理NAS专用接口
+      switch (action) {
+        case 'getPendingTasks':
+          return await getPendingTasks(event)
+        case 'getTempFileURLs':
+          return await getTempFileURLs(event)
+        case 'uploadGeneratedImage':
+          return await uploadGeneratedImage(event)
+        case 'nasCallback':
+          return await nasCallback(event)
+      }
+    }
+
     // 安全获取微信上下文
     let wxContext = null
     let OPENID = null
@@ -1070,5 +1097,328 @@ function formatDisplayTime(date) {
     }
   } catch (e) {
     return formatDate(date)
+  }
+}
+
+// ============================================
+// NAS专用接口实现（用于n8n workflow）
+// ============================================
+
+/**
+ * 获取待处理任务（供NAS轮询）
+ */
+async function getPendingTasks(event) {
+  try {
+    const db = getDb()
+    const { limit = 1 } = event
+
+    // 查询pending状态的任务
+    const result = await db.collection('task_queue')
+      .where({
+        state: 'pending',
+        status: 'pending'
+      })
+      .orderBy('created_at', 'asc')
+      .limit(limit)
+      .get()
+
+    if (result.data.length === 0) {
+      return {
+        success: true,
+        data: {
+          tasks: []
+        },
+        message: '暂无待处理任务'
+      }
+    }
+
+    // 标记任务为nas_processing，防止重复处理
+    for (const task of result.data) {
+      await db.collection('task_queue')
+        .doc(task._id)
+        .update({
+          data: {
+            state: 'nas_processing',
+            status: 'processing',
+            nas_start_time: new Date(),
+            updated_at: new Date()
+          }
+        })
+    }
+
+    console.log(`🎯 NAS获取到 ${result.data.length} 个待处理任务`)
+
+    return {
+      success: true,
+      data: {
+        tasks: result.data
+      },
+      message: `获取到 ${result.data.length} 个待处理任务`
+    }
+
+  } catch (error) {
+    console.error('获取待处理任务失败:', error)
+    return {
+      success: false,
+      message: '获取待处理任务失败: ' + error.message
+    }
+  }
+}
+
+/**
+ * 获取云存储文件的临时URL（供NAS下载图片）
+ */
+async function getTempFileURLs(event) {
+  try {
+    const { fileIds } = event
+
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      return {
+        success: false,
+        message: '文件ID列表不能为空'
+      }
+    }
+
+    // 批量获取临时URL
+    const result = await cloud.getTempFileURL({
+      fileList: fileIds
+    })
+
+    // 提取成功的URL
+    const tempUrls = result.fileList
+      .filter(file => file.status === 0)
+      .map(file => file.tempFileURL)
+
+    console.log(`📥 生成了 ${tempUrls.length} 个临时URL`)
+
+    return {
+      success: true,
+      data: {
+        tempUrls: tempUrls,
+        fileList: result.fileList
+      },
+      message: '获取临时URL成功'
+    }
+
+  } catch (error) {
+    console.error('获取临时URL失败:', error)
+    return {
+      success: false,
+      message: '获取临时URL失败: ' + error.message
+    }
+  }
+}
+
+/**
+ * 上传生成的图片到云存储（供NAS上传结果）
+ */
+async function uploadGeneratedImage(event) {
+  try {
+    const { taskId, imageData } = event
+
+    if (!taskId || !imageData) {
+      return {
+        success: false,
+        message: '任务ID和图片数据不能为空'
+      }
+    }
+
+    // 解析base64图片数据
+    let buffer
+    let format = 'png'
+
+    if (imageData.startsWith('data:image/')) {
+      // data:image/png;base64,xxxxx 格式
+      const matches = imageData.match(/^data:image\/([^;]+);base64,(.+)$/)
+      if (matches) {
+        format = matches[1]
+        buffer = Buffer.from(matches[2], 'base64')
+      } else {
+        throw new Error('无效的base64图片格式')
+      }
+    } else {
+      // 纯base64数据
+      buffer = Buffer.from(imageData, 'base64')
+    }
+
+    // 生成文件路径
+    const timestamp = Date.now()
+    const cloudPath = `photography/${taskId}/${timestamp}.${format}`
+
+    // 上传到云存储
+    const uploadResult = await cloud.uploadFile({
+      cloudPath: cloudPath,
+      fileContent: buffer
+    })
+
+    console.log(`📤 图片上传成功: ${uploadResult.fileID}`)
+
+    return {
+      success: true,
+      data: {
+        fileID: uploadResult.fileID,
+        cloudPath: cloudPath,
+        size: buffer.length
+      },
+      message: '图片上传成功'
+    }
+
+  } catch (error) {
+    console.error('上传图片失败:', error)
+    return {
+      success: false,
+      message: '上传图片失败: ' + error.message
+    }
+  }
+}
+
+/**
+ * NAS任务完成回调（供NAS通知任务完成）
+ */
+async function nasCallback(event) {
+  try {
+    const db = getDb()
+    const { taskId, status, result, error } = event
+
+    if (!taskId || !status) {
+      return {
+        success: false,
+        message: '任务ID和状态不能为空'
+      }
+    }
+
+    console.log(`📞 收到NAS回调: taskId=${taskId}, status=${status}`)
+
+    // 获取任务信息
+    const taskResult = await db.collection('task_queue')
+      .doc(taskId)
+      .get()
+
+    if (!taskResult.data) {
+      return {
+        success: false,
+        message: '任务不存在'
+      }
+    }
+
+    const task = taskResult.data
+    const completionTime = new Date()
+
+    if (status === 'completed') {
+      // 任务成功完成
+      const fileID = result?.data?.fileID
+
+      if (!fileID) {
+        return {
+          success: false,
+          message: '缺少生成的图片文件ID'
+        }
+      }
+
+      // 更新task_queue
+      await db.collection('task_queue')
+        .doc(taskId)
+        .update({
+          data: {
+            status: 'completed',
+            state: 'completed',
+            result: {
+              success: true,
+              fileID: fileID,
+              nas_processing_time: Date.now() - new Date(task.nas_start_time).getTime()
+            },
+            completed_at: completionTime,
+            updated_at: completionTime
+          }
+        })
+
+      // 更新works
+      await db.collection('works')
+        .where({ task_id: taskId })
+        .update({
+          data: {
+            status: 'completed',
+            images: [{
+              url: fileID,
+              width: result?.data?.width || 1024,
+              height: result?.data?.height || 1024
+            }],
+            ai_model: result?.ai_model || 'gemini-2.0-flash-exp',
+            ai_prompt: result?.ai_prompt || '',
+            ai_description: result?.ai_description || null,
+            completed_at: completionTime,
+            created_at: completionTime,  // 更新为完成时间，确保排在最前面
+            updated_at: completionTime
+          }
+        })
+
+      console.log(`✅ 任务完成: ${taskId}`)
+
+      return {
+        success: true,
+        message: '任务状态更新成功'
+      }
+
+    } else if (status === 'failed') {
+      // 任务失败
+      await db.collection('task_queue')
+        .doc(taskId)
+        .update({
+          data: {
+            status: 'failed',
+            state: 'failed',
+            error: error || 'NAS处理失败',
+            updated_at: completionTime
+          }
+        })
+
+      await db.collection('works')
+        .where({ task_id: taskId })
+        .update({
+          data: {
+            status: 'failed',
+            error: error || 'NAS处理失败',
+            updated_at: completionTime
+          }
+        })
+
+      // 退还积分
+      if (task.user_openid && task.params) {
+        const credits = task.params.count || 1
+        try {
+          await db.collection('users')
+            .where({ openid: task.user_openid })
+            .update({
+              data: {
+                credits: db.command.inc(credits),
+                total_consumed_credits: db.command.inc(-credits),
+                updated_at: completionTime
+              }
+            })
+          console.log(`💰 已退还 ${credits} 积分给用户 ${task.user_openid}`)
+        } catch (refundError) {
+          console.error('❌ 退还积分失败:', refundError)
+        }
+      }
+
+      console.log(`❌ 任务失败: ${taskId}, 原因: ${error}`)
+
+      return {
+        success: true,
+        message: '任务失败状态更新成功'
+      }
+    }
+
+    return {
+      success: false,
+      message: '未知的任务状态'
+    }
+
+  } catch (error) {
+    console.error('NAS回调处理失败:', error)
+    return {
+      success: false,
+      message: 'NAS回调处理失败: ' + error.message
+    }
   }
 }

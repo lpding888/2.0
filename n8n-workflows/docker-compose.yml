@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Rembg - 背景移除服务
+  rembg:
+    image: danielgatis/rembg
+    container_name: rembg
+    ports:
+      - "7000:7000"
+    command: s --host 0.0.0.0 --port 7000
+    restart: unless-stopped
+    networks:
+      - ai-services
+    environment:
+      - MODEL=u2net  # 默认模型，可选：u2net, u2netp, u2net_human_seg, u2net_cloth_seg
+    volumes:
+      - rembg_cache:/root/.u2net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx - 图片服务器（可选，用于NAS图片存储）
+  nginx:
+    image: nginx:alpine
+    container_name: nas-image-server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./images:/usr/share/nginx/html/images:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - ai-services
+    environment:
+      - TZ=Asia/Shanghai
+
+networks:
+  ai-services:
+    driver: bridge
+
+volumes:
+  rembg_cache:
+    driver: local
