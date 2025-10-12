@@ -124,10 +124,21 @@ export const worksAPI = {
   getWorks: (params: any) => {
     return apiClient.get('/works', { params });
   },
+  list: (params: any) => {
+    return apiClient.get('/works', { params });
+  },
 
   // 获取作品详情
   getWorkDetail: (workId: string) => {
     return apiClient.get(`/works/${workId}`);
+  },
+  getDetail: (workId: string) => {
+    return apiClient.get(`/works/${workId}`);
+  },
+
+  // 切换收藏状态
+  toggleFavorite: (workId: string) => {
+    return apiClient.put(`/works/${workId}/favorite`);
   },
 
   // 更新作品
@@ -139,9 +150,15 @@ export const worksAPI = {
   deleteWork: (workId: string) => {
     return apiClient.delete(`/works/${workId}`);
   },
+  delete: (workId: string) => {
+    return apiClient.delete(`/works/${workId}`);
+  },
 
   // 批量删除作品
   batchDeleteWorks: (workIds: string[]) => {
+    return apiClient.post('/works/batch/delete', { work_ids: workIds });
+  },
+  batchDelete: (workIds: string[]) => {
     return apiClient.post('/works/batch/delete', { work_ids: workIds });
   },
 };

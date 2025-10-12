@@ -237,7 +237,7 @@ export default function StudioPage() {
                 </Link>
                 <div className="flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-lg">
                   <span className="text-sm text-gray-600">积分:</span>
-                  <span className="text-lg font-bold text-purple-600">{user.credits}</span>
+                  <span className="text-lg font-bold text-purple-600">{user.credits || 0}</span>
                 </div>
                 <Link href="/profile" className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
