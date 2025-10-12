@@ -7,6 +7,7 @@ class WebSocketManager {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectInterval = 3000;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
   private listeners: Map<string, Set<Function>> = new Map();
 
   connect(token: string) {
@@ -111,7 +112,12 @@ class WebSocketManager {
 
   // 心跳
   private startHeartbeat() {
-    setInterval(() => {
+    // 清理旧的心跳定时器
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    this.heartbeatInterval = setInterval(() => {
       if (this.socket && this.socket.connected) {
         this.socket.emit('message', JSON.stringify({ type: 'ping' }));
       }
@@ -120,6 +126,12 @@ class WebSocketManager {
 
   // 断开连接
   disconnect() {
+    // 清理心跳定时器
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
