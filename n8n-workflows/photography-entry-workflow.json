@@ -1,0 +1,186 @@
+{
+  "name": "AI摄影-入口工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "photography/generate",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-entry",
+      "name": "接收生成请求",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "photography-generate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 验证请求参数\nconst body = $input.item.json.body;\n\n// 必需参数检查\nif (!body.userId) {\n  throw new Error('缺少userId参数');\n}\n\nif (!body.images || !Array.isArray(body.images) || body.images.length === 0) {\n  throw new Error('缺少服装图片或图片格式错误');\n}\n\nif (!body.params || !body.params.scene) {\n  throw new Error('缺少场景参数');\n}\n\n// 验证mode\nconst validModes = ['normal', 'photo_set'];\nif (body.mode && !validModes.includes(body.mode)) {\n  throw new Error(`无效的mode参数: ${body.mode}`);\n}\n\n// 验证套图数量\nif (body.mode === 'photo_set') {\n  const count = body.params.count || 9;\n  if (count < 3 || count > 12) {\n    throw new Error('套图数量必须在3-12之间');\n  }\n}\n\nreturn {\n  json: {\n    valid: true,\n    ...body\n  }\n};"
+      },
+      "id": "validate-request",
+      "name": "验证请求参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 生成任务ID和初始任务对象\nconst body = $input.item.json;\nconst taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\nconst task = {\n  taskId: taskId,\n  status: 'pending',\n  userId: body.userId,\n  mode: body.mode || 'normal',\n  images: body.images,\n  params: {\n    scene: body.params.scene,\n    style: body.params.style || '现代简约',\n    background: body.params.background || '纯色背景',\n    color: body.params.color || '自然色调',\n    count: body.params.count || (body.mode === 'photo_set' ? 9 : 1)\n  },\n  prompts: {\n    frontend: body.prompt || '',\n    base: '',\n    action: [],\n    final: []\n  },\n  results: [],\n  errors: [],\n  retryCount: 0,\n  createdAt: new Date().toISOString(),\n  updatedAt: new Date().toISOString()\n};\n\nreturn { json: task };"
+      },
+      "id": "generate-task",
+      "name": "生成任务对象",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "lpush",
+        "key": "task_queue:photography:pending",
+        "value": "={{ JSON.stringify($json) }}"
+      },
+      "id": "push-to-queue",
+      "name": "推送到Redis队列",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "redis": {
+          "id": "redis-main",
+          "name": "Redis Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "hset",
+        "key": "={{ \"task_status:\" + $json.taskId }}",
+        "field": "data",
+        "value": "={{ JSON.stringify($json) }}"
+      },
+      "id": "save-task-status",
+      "name": "保存任务状态",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [850, 450],
+      "credentials": {
+        "redis": {
+          "id": "redis-main",
+          "name": "Redis Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"taskId\": $json.taskId,\n  \"message\": \"任务已创建，正在处理中\",\n  \"estimatedTime\": $json.mode === 'photo_set' ? 180 : 60\n} }}"
+      },
+      "id": "respond-webhook",
+      "name": "立即返回响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WORKER_WEBHOOK_URL }}/webhook/photography-worker",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "trigger",
+              "value": "new_task"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 3000
+        }
+      },
+      "id": "trigger-worker",
+      "name": "触发Worker处理",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 450],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "接收生成请求": {
+      "main": [
+        [
+          {
+            "node": "验证请求参数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "验证请求参数": {
+      "main": [
+        [
+          {
+            "node": "生成任务对象",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成任务对象": {
+      "main": [
+        [
+          {
+            "node": "推送到Redis队列",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "保存任务状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "推送到Redis队列": {
+      "main": [
+        [
+          {
+            "node": "立即返回响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "立即返回响应": {
+      "main": [
+        [
+          {
+            "node": "触发Worker处理",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "photography",
+      "name": "摄影系统"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1.0.0"
+}

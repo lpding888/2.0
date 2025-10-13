@@ -60,13 +60,51 @@ Page({
     // 编辑资料相关
     editingNickname: false,
     editNickname: '',
-    editAvatarUrl: ''
+    editAvatarUrl: '',
+    // 模式判断
+    mode: 'commercial', // commercial | personal
+    // 个人模式统计数据
+    stats: {
+      clothes: 0,
+      works: 0,
+      memories: 0
+    }
   },
 
   onShow() {
+    // 检查当前模式
+    const mode = wx.getStorageSync('app_mode') || 'commercial'
+    console.log('profile onShow - 当前模式:', mode)
+    this.setData({ mode })
+
+    // 更新自定义TabBar（先刷新列表，再设置选中）
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      const tabBar = this.getTabBar()
+
+      // 刷新TabBar的tab列表
+      if (tabBar.updateList) {
+        tabBar.updateList()
+      }
+
+      // 设置选中状态
+      const selected = mode === 'commercial' ? 2 : 3 // 商业=2, 个人=3
+      tabBar.setData({ selected })
+      console.log('profile onShow - 设置TabBar selected:', selected)
+    }
+
     // 页面每次显示时，都执行一次完整的状态检查和刷新
     this.refreshProfile();
-    this.loadSignInState();
+
+    // 商业模式：加载签到状态
+    if (mode === 'commercial') {
+      this.loadSignInState();
+    }
+
+    // 个人模式：加载统计数据
+    if (mode === 'personal') {
+      this.loadPersonalStats();
+    }
+
     this.checkAdminStatus();
   },
 
@@ -321,6 +359,79 @@ Page({
     wx.navigateTo({
       url: '/pages/subPackageRecords/feedback/feedback'
     });
+  },
+
+  /**
+   * 跳转到造型规划器
+   */
+  goToStylingPlanner() {
+    wx.navigateTo({
+      url: '/pages/styling-planner/styling-planner'
+    });
+  },
+
+  /**
+   * 跳转到造型回忆
+   */
+  goToMemories() {
+    wx.navigateTo({
+      url: '/pages/memories/memories'
+    });
+  },
+
+  /**
+   * 跳转到我的衣柜
+   */
+  goToWardrobe() {
+    wx.switchTab({
+      url: '/pages/wardrobe/wardrobe'
+    });
+  },
+
+  /**
+   * 加载个人模式统计数据
+   */
+  loadPersonalStats() {
+    try {
+      const dataManager = require('../../utils/data-manager.js')
+      const clothes = dataManager.getWardrobeItems().length
+      const memories = dataManager.getMemories().length
+      // TODO: 从云数据库加载作品数量
+      const works = 0
+
+      this.setData({
+        stats: { clothes, works, memories }
+      })
+    } catch (error) {
+      console.error('加载个人统计数据失败:', error)
+    }
+  },
+
+  /**
+   * 切换模式
+   */
+  switchMode() {
+    const currentMode = this.data.mode
+    const targetMode = currentMode === 'commercial' ? 'personal' : 'commercial'
+    const targetText = targetMode === 'commercial' ? '商业拍摄' : '个人生活'
+
+    wx.showModal({
+      title: '切换模式',
+      content: `是否切换到${targetText}模式？`,
+      confirmColor: '#FF9A56',
+      success: (res) => {
+        if (res.confirm) {
+          wx.setStorageSync('app_mode', targetMode)
+
+          // 跳转到对应模式的默认tab
+          if (targetMode === 'commercial') {
+            wx.switchTab({ url: '/pages/index/index' })
+          } else {
+            wx.switchTab({ url: '/pages/wardrobe/wardrobe' })
+          }
+        }
+      }
+    })
   },
 
   /**

@@ -9,6 +9,13 @@ Page({
   },
 
   onShow() {
+    // 更新自定义TabBar选中状态（统一tab顺序：摄影=0）
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({
+        selected: 0
+      })
+    }
+
     // 页面每次显示时，都从全局同步并异步刷新用户信息
     this.refreshHomePage();
   },
@@ -126,29 +133,20 @@ Page({
   },
 
   /**
-   * 跳转到服装商业拍摄页面
+   * 跳转到服装拍摄页面
    */
-  goToCommercial() {
+  goToPhotography() {
     wx.navigateTo({
-      url: '/pages/commercial/commercial'
+      url: '/pages/photography/photography'
     })
   },
 
   /**
-   * 跳转到玩美空间页面
+   * 跳转到模特换装页面
    */
-  goToPersonal() {
+  goToFitting() {
     wx.navigateTo({
-      url: '/pages/personal/personal'
-    })
-  },
-
-  /**
-   * 查看作品 - 支持游客浏览
-   */
-  viewWorks() {
-    wx.switchTab({
-      url: '/pages/works/works'
+      url: '/pages/fitting/fitting'
     })
   },
 

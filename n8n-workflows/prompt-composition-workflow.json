@@ -1,0 +1,263 @@
+{
+  "name": "提示词合成子工作流",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "工作流触发器",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析输入参数\nconst input = $input.item.json;\nconst params = typeof input === 'string' ? JSON.parse(input) : input;\n\nreturn {\n  json: {\n    mode: params.mode || 'normal',\n    scene: params.params.scene,\n    style: params.params.style || '现代简约',\n    background: params.params.background || '纯色背景',\n    color: params.params.color || '自然色调',\n    count: params.params.count || 1,\n    frontendPrompt: params.frontendPrompt || ''\n  }\n};"
+      },
+      "id": "parse-input",
+      "name": "解析输入参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 系统基础提示词库\nconst input = $input.item.json;\nconst mode = input.mode;\nconst scene = input.scene;\n\n// 定义提示词模板库\nconst SYSTEM_PROMPTS = {\n  'normal': {\n    '商业摄影': `Professional commercial fashion photography, studio setting with professional lighting setup, \nmodel wearing clothing in professional pose, clean and minimalist background, \nhigh-end fashion editorial style, sharp focus on clothing details, \n8K resolution, professional color grading`,\n    \n    '户外场景': `Outdoor lifestyle fashion photography, natural daylight, \nmodel wearing clothing in outdoor environment, natural background setting, \nlifestyle editorial style, candid and authentic feel, \nhigh resolution, natural color palette`,\n    \n    '创意风格': `Creative artistic fashion photography, unique perspective and composition, \nmodel wearing clothing in artistic pose, creative background and lighting, \neditorial avant-garde style, emphasis on artistic expression, \nhigh quality, artistic color treatment`,\n    \n    '街拍风格': `Street style fashion photography, urban background, \nmodel wearing clothing in casual natural pose, city environment, \nstreet fashion editorial style, authentic urban atmosphere, \nhigh resolution, vibrant colors`,\n    \n    '极简风格': `Minimalist fashion photography, simple clean composition, \nmodel wearing clothing in refined pose, monochromatic or neutral background, \nminimalist editorial style, focus on form and silhouette, \nultra-high quality, subtle tones`\n  },\n  \n  'photo_set': {\n    '商业摄影': `Professional fashion lookbook photography series, consistent studio lighting across all shots, \nmodel wearing clothing in various professional poses, uniform clean background, \ncommercial presentation style, cohesive visual narrative, \n8K resolution, consistent professional color grading`,\n    \n    '户外场景': `Outdoor lifestyle fashion photography series, consistent natural lighting, \nmodel wearing clothing in multiple outdoor poses and angles, natural background setting, \nlifestyle lookbook style, cohesive storytelling approach, \nhigh resolution, harmonious natural color palette`,\n    \n    '创意风格': `Creative fashion photography series, varied artistic perspectives, \nmodel wearing clothing in diverse creative poses, artistic background variations, \navant-garde editorial series, unified artistic vision, \nhigh quality, consistent artistic color treatment`\n  }\n};\n\n// 获取基础提示词\nconst basePrompt = SYSTEM_PROMPTS[mode]?.[scene] \n  || SYSTEM_PROMPTS['normal']['商业摄影'];\n\nreturn {\n  json: {\n    ...input,\n    basePrompt: basePrompt\n  }\n};"
+      },
+      "id": "get-base-prompt",
+      "name": "获取系统基础提示词",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 组装前端参数提示词\nconst input = $input.item.json;\n\nconst frontendComponents = [];\n\n// 场景描述\nif (input.scene) {\n  frontendComponents.push(`Photography scene: ${input.scene}`);\n}\n\n// 风格描述\nif (input.style) {\n  const styleMap = {\n    '现代简约': 'modern minimalist style',\n    '复古经典': 'vintage classic style',\n    '时尚前卫': 'trendy avant-garde style',\n    '优雅高贵': 'elegant sophisticated style',\n    '休闲随性': 'casual relaxed style'\n  };\n  frontendComponents.push(`Style: ${styleMap[input.style] || input.style}`);\n}\n\n// 背景描述\nif (input.background) {\n  const backgroundMap = {\n    '纯色背景': 'solid color background',\n    '自然背景': 'natural environment background',\n    '城市背景': 'urban cityscape background',\n    '室内场景': 'interior setting background',\n    '抽象背景': 'abstract artistic background'\n  };\n  frontendComponents.push(`Background: ${backgroundMap[input.background] || input.background}`);\n}\n\n// 色调描述\nif (input.color) {\n  const colorMap = {\n    '自然色调': 'natural color tones',\n    '暖色调': 'warm color palette',\n    '冷色调': 'cool color palette',\n    '黑白色调': 'black and white monochrome',\n    '高饱和度': 'high saturation vibrant colors'\n  };\n  frontendComponents.push(`Color treatment: ${colorMap[input.color] || input.color}`);\n}\n\n// 用户自定义提示词\nif (input.frontendPrompt && input.frontendPrompt.trim()) {\n  frontendComponents.push(`Additional requirements: ${input.frontendPrompt}`);\n}\n\nconst frontendPrompt = frontendComponents.join('. ');\n\nreturn {\n  json: {\n    ...input,\n    frontendPrompt: frontendPrompt\n  }\n};"
+      },
+      "id": "assemble-frontend-prompt",
+      "name": "组装前端参数提示词",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 准备LLM调用参数\nconst input = $input.item.json;\nconst count = input.count;\nconst scene = input.scene;\nconst style = input.style;\nconst mode = input.mode;\n\n// 构建LLM提示词\nconst systemPrompt = `你是一个专业的时尚摄影指导师，擅长设计模特的姿势和动作。\n你的任务是为服装摄影生成具体、专业的模特动作描述。`;\n\nconst userPrompt = `请为以下服装摄影场景生成${count}个不同的模特姿势和动作描述：\n\n场景类型: ${scene}\n风格要求: ${style}\n拍摄模式: ${mode === 'photo_set' ? '套图系列（需要姿势多样但风格统一）' : '单张照片'}\n\n要求：\n1. 每个动作要具体明确，包含：身体姿势、手部动作、视线方向、表情状态\n2. 动作要符合${scene}场景的特点和${style}风格的要求\n3. ${mode === 'photo_set' ? '套图中的动作要有变化，从静态到动态，从正面到侧面，保持整体风格统一' : '单张照片要选择最能展现服装的经典姿势'}\n4. 用英文输出，便于AI图像生成模型理解\n5. 每个动作描述控制在15-25个英文单词\n\n请以JSON数组格式返回，格式如下：\n{\n  \"actions\": [\n    \"standing straight, hands in pockets, looking at camera with confident smile, relaxed posture\",\n    \"walking forward, one hand adjusting collar, side profile view, natural expression\",\n    ...\n  ]\n}`;\n\nreturn {\n  json: {\n    ...input,\n    llmSystemPrompt: systemPrompt,\n    llmUserPrompt: userPrompt\n  }\n};"
+      },
+      "id": "prepare-llm-call",
+      "name": "准备LLM调用参数",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.llmSystemPrompt }}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.llmUserPrompt }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8,
+          "maxTokens": 1000,
+          "responseFormat": "json_object"
+        }
+      },
+      "id": "call-openai-llm",
+      "name": "调用OpenAI生成动作",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1250, 400],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-main",
+          "name": "OpenAI API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-llm-error",
+      "name": "检查LLM是否出错",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 使用默认动作库作为后备\nconst input = $node[\"准备LLM调用参数\"].json;\nconst count = input.count;\nconst scene = input.scene;\n\n// 默认动作库\nconst DEFAULT_ACTIONS = {\n  '商业摄影': [\n    'standing straight with confident posture, hands naturally at sides, direct eye contact with camera, professional expression',\n    'standing with one hand in pocket, slight body turn, looking at camera, relaxed confident smile',\n    'walking pose with natural stride, arms swinging naturally, three-quarter view, casual expression',\n    'seated position with crossed legs, hands on lap, upright posture, engaged facial expression',\n    'leaning against surface, arms crossed, side profile, thoughtful confident look',\n    'standing with hands on hips, strong posture, direct gaze, powerful presence',\n    'turning motion captured mid-movement, one arm extended, dynamic pose, energetic expression',\n    'casual stance with weight on one leg, hand adjusting clothing, natural smile',\n    'professional pose with hands clasped in front, straight posture, serious expression'\n  ],\n  '户外场景': [\n    'walking naturally on path, looking ahead, relaxed arms, candid expression',\n    'standing in natural setting, hand shielding eyes from sun, genuine smile',\n    'sitting on bench or surface, leaning back casually, relaxed demeanor',\n    'interaction with environment, touching tree or wall, natural curiosity',\n    'mid-stride walking, wind-blown effect, carefree expression',\n    'standing with arms outstretched, embracing surroundings, joyful mood',\n    'crouching or bending position, examining something, engaged focus',\n    'running or jumping motion, dynamic energy, playful expression',\n    'sitting on ground, knees drawn up, contemplative peaceful look'\n  ],\n  '创意风格': [\n    'dramatic angular pose, one arm raised artistically, intense gaze, avant-garde styling',\n    'asymmetrical stance, body twisted creatively, experimental expression',\n    'geometric pose with sharp lines, hands positioned abstractly, editorial intensity',\n    'layered movement with multiple arm positions, artistic blur, dynamic energy',\n    'profile silhouette, dramatic lighting emphasis, mysterious aura',\n    'unconventional crouching pose, hands framing face, artistic interpretation',\n    'suspended motion captured, floating effect, dreamlike quality',\n    'mirror or reflection interaction, doubled imagery, conceptual approach',\n    'minimalist pose with extreme simplicity, sculptural quality, refined elegance'\n  ],\n  '街拍风格': [\n    'casual urban walk, hands in pockets, natural street environment, authentic vibe',\n    'leaning against wall, checking phone, everyday moment captured',\n    'crossing street, mid-stride, city backdrop, candid street photography',\n    'sitting on urban furniture, relaxed posture, street life context',\n    'carrying bag or coffee, natural gesture, spontaneous street moment',\n    'looking at shop window, side view, urban exploration captured',\n    'waiting pose, checking time, realistic street scenario',\n    'interacting with street element, urban authenticity, real-life moment',\n    'standing at crosswalk, urban background, contemporary street style'\n  ],\n  '极简风格': [\n    'perfectly centered standing pose, arms at sides, symmetrical composition, serene expression',\n    'profile view, minimal movement, clean lines, contemplative stillness',\n    'seated with perfect posture, hands folded, geometric simplicity, calm presence',\n    'back view, head slightly turned, minimalist elegance, refined subtlety',\n    'standing with one hand raised to face, graceful gesture, quiet sophistication',\n    'walking with purposeful stride, minimal background, focused movement',\n    'arms crossed gently, centered position, balanced composition, peaceful demeanor',\n    'hands clasped behind back, upright stance, minimalist purity, dignified bearing',\n    'slight lean to one side, subtle asymmetry, restrained elegance, quiet confidence'\n  ]\n};\n\n// 获取默认动作\nconst actions = DEFAULT_ACTIONS[scene] || DEFAULT_ACTIONS['商业摄影'];\nconst selectedActions = actions.slice(0, count);\n\n// 如果需要的数量超过默认库，循环使用\nwhile (selectedActions.length < count) {\n  selectedActions.push(...actions.slice(0, count - selectedActions.length));\n}\n\nconsole.log(`LLM调用失败，使用默认动作库，场景: ${scene}，数量: ${count}`);\n\nreturn {\n  json: {\n    ...input,\n    actions: selectedActions,\n    actionSource: 'fallback_default'\n  }\n};"
+      },
+      "id": "use-default-actions",
+      "name": "使用默认动作库",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析LLM响应\nconst response = $input.item.json;\nconst input = $node[\"准备LLM调用参数\"].json;\n\nlet actions = [];\n\ntry {\n  // OpenAI n8n节点返回的格式\n  const content = response.choices?.[0]?.message?.content || response.message?.content;\n  \n  if (!content) {\n    throw new Error('LLM响应为空');\n  }\n  \n  const parsed = JSON.parse(content);\n  actions = parsed.actions || [];\n  \n  if (!Array.isArray(actions) || actions.length === 0) {\n    throw new Error('LLM返回的动作数组为空');\n  }\n  \n  console.log(`LLM成功生成${actions.length}个动作描述`);\n  \n} catch (error) {\n  console.error('解析LLM响应失败:', error.message);\n  throw error;\n}\n\nreturn {\n  json: {\n    ...input,\n    actions: actions,\n    actionSource: 'llm_generated'\n  }\n};"
+      },
+      "id": "parse-llm-response",
+      "name": "解析LLM响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 合成最终提示词\nconst input = $input.item.json;\nconst basePrompt = input.basePrompt;\nconst frontendPrompt = input.frontendPrompt;\nconst actions = input.actions;\n\n// 为每个动作生成完整的提示词\nconst finalPrompts = actions.map((action, index) => {\n  const parts = [];\n  \n  // 1. 系统基础提示词 (Layer 1)\n  parts.push(basePrompt);\n  \n  // 2. 前端参数提示词 (Layer 2)\n  if (frontendPrompt && frontendPrompt.trim()) {\n    parts.push(frontendPrompt);\n  }\n  \n  // 3. LLM生成的动作提示词 (Layer 3)\n  parts.push(`Model pose and action: ${action}`);\n  \n  // 4. 质量增强后缀\n  parts.push('Professional photography, high quality, 4K resolution, professional color grading');\n  \n  return parts.join('. ');\n});\n\nconsole.log(`成功合成${finalPrompts.length}个最终提示词`);\n\nreturn {\n  json: {\n    finalPrompts: finalPrompts,\n    breakdown: {\n      basePrompt: basePrompt,\n      frontendPrompt: frontendPrompt,\n      actions: actions,\n      actionSource: input.actionSource,\n      count: finalPrompts.length\n    },\n    metadata: {\n      scene: input.scene,\n      style: input.style,\n      mode: input.mode,\n      compositionLayers: 3\n    }\n  }\n};"
+      },
+      "id": "compose-final-prompts",
+      "name": "合成最终提示词",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    }
+  ],
+  "connections": {
+    "工作流触发器": {
+      "main": [
+        [
+          {
+            "node": "解析输入参数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析输入参数": {
+      "main": [
+        [
+          {
+            "node": "获取系统基础提示词",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获取系统基础提示词": {
+      "main": [
+        [
+          {
+            "node": "组装前端参数提示词",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "组装前端参数提示词": {
+      "main": [
+        [
+          {
+            "node": "准备LLM调用参数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备LLM调用参数": {
+      "main": [
+        [
+          {
+            "node": "调用OpenAI生成动作",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用OpenAI生成动作": {
+      "main": [
+        [
+          {
+            "node": "检查LLM是否出错",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查LLM是否出错": {
+      "main": [
+        [
+          {
+            "node": "使用默认动作库",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "解析LLM响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "使用默认动作库": {
+      "main": [
+        [
+          {
+            "node": "合成最终提示词",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析LLM响应": {
+      "main": [
+        [
+          {
+            "node": "合成最终提示词",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "photography",
+      "name": "摄影系统"
+    },
+    {
+      "id": "prompt",
+      "name": "提示词"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1.0.0"
+}

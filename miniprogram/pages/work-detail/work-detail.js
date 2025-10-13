@@ -498,6 +498,35 @@ Page({
   },
 
   /**
+   * 保存到回忆
+   */
+  saveToMemory() {
+    const work = this.data.work
+    if (!work || !work.images || work.images.length === 0) {
+      wx.showToast({
+        title: '没有可保存的图片',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 获取当前查看的图片URL
+    const currentImage = work.images[this.data.currentImageIndex]
+    const imageUrl = currentImage.temp_url || currentImage.url
+
+    // 使用全局数据传递（避免URL长度限制）
+    const app = getApp()
+    app.globalData = app.globalData || {}
+    app.globalData.tempMemoryImage = imageUrl
+    app.globalData.tempMemoryFrom = 'work'
+
+    // 跳转到造型回忆页面
+    wx.navigateTo({
+      url: `/pages/memories/memories?from=work`
+    })
+  },
+
+  /**
    * 保存图片到相册
    */
   async saveToAlbum() {

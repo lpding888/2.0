@@ -1,0 +1,391 @@
+{
+  "name": "服装摄影主工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "photography",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook 接收请求",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "photography-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析和验证请求\nconst body = $input.item.json.body;\n\n// 验证必需字段\nif (!body.images || !Array.isArray(body.images) || body.images.length === 0) {\n  throw new Error('缺少服装图片');\n}\n\nif (!body.parameters) {\n  throw new Error('缺少参数配置');\n}\n\n// 生成任务ID\nconst taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\n// 标准化数据\nconst task = {\n  taskId: taskId,\n  userId: body.userId || 'anonymous',\n  mode: body.mode || 'normal',\n  images: body.images,\n  parameters: {\n    gender: body.parameters.gender || 'female',\n    age: body.parameters.age || 25,\n    height: body.parameters.height || 170,\n    nationality: body.parameters.nationality || 'asian',\n    skin_tone: body.parameters.skin_tone || 'medium',\n    location: body.parameters.location || '',\n    pose_type: body.parameters.pose_type || '',\n    lighting_style: body.parameters.lighting_style || '',\n    mood_and_atmosphere: body.parameters.mood_and_atmosphere || '',\n    outfit_description: body.parameters.outfit_description || '',\n    clothing_material: body.parameters.clothing_material || ''\n  },\n  sceneId: body.sceneId || null,\n  photoSetConfig: body.photoSetConfig || null,\n  flatlayConfig: body.flatlayConfig || null,\n  count: body.count || 1,\n  timestamp: Date.now()\n};\n\nreturn { json: task };"
+      },
+      "id": "parse-request",
+      "name": "解析请求",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "output": "{{$json.mode}}"
+      },
+      "id": "switch-mode",
+      "name": "切换模式",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "agent",
+        "operation": "message",
+        "model": "gpt-4o",
+        "systemMessage": "你是专业的时尚摄影提示词专家。根据用户提供的参数，生成专业、详细、符合AI图像生成要求的提示词。\n\n要求：\n1. 描述要具体、专业\n2. 包含模特特征、服装、场景、光线、构图\n3. 使用专业摄影术语\n4. 英文输出\n5. 确保提示词长度在500字符以内",
+        "text": "=请根据以下参数生成专业的摄影提示词：\n\n模特信息：\n- 性别：{{$json.parameters.gender}}\n- 年龄：{{$json.parameters.age}}\n- 身高：{{$json.parameters.height}}cm\n- 国籍：{{$json.parameters.nationality}}\n- 肤色：{{$json.parameters.skin_tone}}\n\n拍摄场景：{{$json.parameters.location}}\n\n服装描述：{{$json.parameters.outfit_description}}\n\n姿势要求：{{$json.parameters.pose_type}}\n\n光线风格：{{$json.parameters.lighting_style}}\n\n氛围：{{$json.parameters.mood_and_atmosphere}}\n\n请生成英文提示词，包含positive prompt和negative prompt。",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 800
+        }
+      },
+      "id": "ai-agent-prompt",
+      "name": "AI智能提示词生成",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [850, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 提示词合成（如果AI Agent失败，使用模板合成）\nconst params = $input.item.json.parameters;\nconst mode = $input.item.json.mode;\n\n// 基础模板\nconst templates = {\n  base: \"Professional fashion photography\",\n  \n  gender: {\n    female: \"beautiful Asian female model\",\n    male: \"handsome Asian male model\"\n  },\n  \n  nationality: {\n    asian: \"East Asian\",\n    european: \"European\",\n    african: \"African\",\n    american: \"American\"\n  },\n  \n  skin_tone: {\n    fair: \"fair skin\",\n    light: \"light skin tone\",\n    medium: \"medium skin tone\",\n    olive: \"olive skin\",\n    tan: \"tan skin\",\n    dark: \"dark skin\"\n  },\n  \n  quality: \"high quality, 8K resolution, professional photography, sharp focus, detailed, studio lighting, perfect composition\"\n};\n\n// 构建提示词\nlet prompt = templates.base;\n\n// 添加服装描述\nif (params.outfit_description) {\n  prompt += ` of ${params.outfit_description}`;\n}\n\n// 添加模特信息\nconst gender = params.gender || 'female';\nconst age = params.age || 25;\nconst height = params.height || 170;\nconst nationality = templates.nationality[params.nationality] || 'Asian';\nconst skinTone = templates.skin_tone[params.skin_tone] || 'medium skin tone';\n\nprompt += `, ${templates.gender[gender]}, age ${age}, height ${height}cm, ${nationality}, ${skinTone}`;\n\n// 添加场景\nif (params.location) {\n  prompt += `, ${params.location}`;\n} else {\n  prompt += \", in professional photo studio, white background\";\n}\n\n// 添加姿势\nif (params.pose_type) {\n  prompt += `, ${params.pose_type}`;\n} else {\n  prompt += \", standing pose, full body shot\";\n}\n\n// 添加光线\nif (params.lighting_style) {\n  prompt += `, ${params.lighting_style}`;\n} else {\n  prompt += \", studio lighting, soft shadows\";\n}\n\n// 添加氛围\nif (params.mood_and_atmosphere) {\n  prompt += `, ${params.mood_and_atmosphere}`;\n}\n\n// 添加质量后缀\nprompt += `, ${templates.quality}`;\n\n// 负面提示词\nconst negativePrompt = \"low quality, blurry, distorted, deformed, ugly, bad anatomy, bad proportions, watermark, signature, text, cropped, out of frame, worst quality, low res, unrealistic, cartoon, anime\";\n\nreturn {\n  json: {\n    ...$(\"parse-request\").item.json,\n    prompt: prompt,\n    negative_prompt: negativePrompt,\n    prompt_source: 'template'\n  }\n};"
+      },
+      "id": "compose-prompt",
+      "name": "模板提示词合成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 套图批量提示词生成\nconst task = $input.item.json;\nconst config = task.photoSetConfig;\n\nif (!config || !config.shots) {\n  throw new Error('套图配置缺失');\n}\n\n// 基础提示词\nconst basePrompt = task.prompt || \"Professional fashion photography\";\nconst negativePrompt = task.negative_prompt || \"low quality, blurry\";\n\n// 镜头类型映射\nconst shotTypes = {\n  '正面白底': 'front view, white background, studio lighting, full body shot',\n  '背面白底': 'back view, white background, studio lighting, full body shot, rear angle',\n  '侧面白底': 'side view, white background, studio lighting, 45 degree angle',\n  '平铺展示': 'flat lay, top view, perfectly aligned on white background',\n  '悬挂展示': 'hanging on hanger, white background, front view',\n  '领口特写': 'close-up of collar detail, macro photography, detailed texture',\n  '袖口特写': 'close-up of sleeve detail, macro photography, detailed texture',\n  '材质纹理': 'extreme close-up of fabric texture, detailed weave pattern',\n  '纽扣细节': 'close-up of buttons and fasteners, detailed hardware',\n  '标签吊牌': 'close-up of label and tag, brand details',\n  '模特正面': 'model wearing clothes, front view, full body, natural pose',\n  '模特侧面': 'model wearing clothes, side view, half body, elegant pose',\n  '模特背面': 'model wearing clothes, back view, full body, walking away',\n  '坐姿': 'model sitting, elegant seated pose',\n  '行走': 'model walking naturally, dynamic movement',\n  '动态pose': 'model in dynamic action pose, energetic movement'\n};\n\n// 生成所有镜头的提示词\nconst prompts = config.shots.map((shot, index) => {\n  const shotDesc = shotTypes[shot] || shot;\n  const fullPrompt = `${basePrompt}, ${shotDesc}`;\n  \n  return {\n    index: index + 1,\n    shotName: shot,\n    prompt: fullPrompt,\n    negative_prompt: negativePrompt,\n    priority: shot.includes('正面') || shot.includes('模特正面') ? 'high' : 'normal'\n  };\n});\n\nreturn prompts.map(p => ({ json: { ...task, ...p, totalShots: config.shots.length } }));"
+      },
+      "id": "photoset-prompts",
+      "name": "套图提示词批量生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stability.ai/v2beta/stable-image/generate/core",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stabilityApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{$json.prompt}}"
+            },
+            {
+              "name": "negative_prompt",
+              "value": "={{$json.negative_prompt}}"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "3:4"
+            },
+            {
+              "name": "output_format",
+              "value": "jpeg"
+            },
+            {
+              "name": "seed",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "call-stability-ai",
+      "name": "调用Stability AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300],
+      "credentials": {
+        "stabilityApi": {
+          "id": "stability-credentials",
+          "name": "Stability AI"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Base64解码并准备上传\nconst imageData = $input.item.json.image;\nconst taskId = $input.item.json.taskId;\nconst shotName = $input.item.json.shotName || 'photo';\nconst index = $input.item.json.index || 1;\n\n// 生成文件名\nconst filename = `${taskId}/${index}_${shotName.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;\n\n// 解码Base64\nconst buffer = Buffer.from(imageData, 'base64');\n\nreturn {\n  json: {\n    ...$(\"parse-request\").item.json,\n    filename: filename,\n    contentType: 'image/jpeg',\n    size: buffer.length\n  },\n  binary: {\n    data: buffer\n  }\n};"
+      },
+      "id": "prepare-upload",
+      "name": "准备上传",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://{{$env.COS_BUCKET}}.cos.{{$env.COS_REGION}}.myqcloud.com/{{$json.filename}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "binaryData",
+        "bodyBinaryPropertyName": "data",
+        "options": {
+          "timeout": 30000
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{$json.contentType}}"
+            }
+          ]
+        }
+      },
+      "id": "upload-to-cos",
+      "name": "上传到腾讯云COS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tencent-cos-auth",
+          "name": "Tencent COS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 生成结果URL\nconst filename = $input.item.json.filename;\nconst bucket = $env.COS_BUCKET;\nconst region = $env.COS_REGION;\n\nconst imageUrl = `https://${bucket}.cos.${region}.myqcloud.com/${filename}`;\n\nreturn {\n  json: {\n    taskId: $input.item.json.taskId,\n    shotName: $input.item.json.shotName,\n    index: $input.item.json.index,\n    imageUrl: imageUrl,\n    uploadedAt: Date.now(),\n    success: true\n  }\n};"
+      },
+      "id": "format-result",
+      "name": "格式化结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CLOUD_FUNCTION_CALLBACK}}/photography",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "updateTask"
+            },
+            {
+              "name": "taskId",
+              "value": "={{$json.taskId}}"
+            },
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "results",
+              "value": "={{$json.imageUrl}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "callback-cloud-function",
+      "name": "回调云函数",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, taskId: $json.taskId, imageUrl: $json.imageUrl, message: '生成成功' } }}"
+      },
+      "id": "respond-webhook",
+      "name": "返回响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: $json.error.message, message: '生成失败' } }}",
+        "responseCode": 500
+      },
+      "id": "error-response",
+      "name": "错误响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1450, 500]
+    }
+  ],
+  "connections": {
+    "Webhook 接收请求": {
+      "main": [
+        [
+          {
+            "node": "解析请求",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析请求": {
+      "main": [
+        [
+          {
+            "node": "切换模式",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "切换模式": {
+      "main": [
+        [
+          {
+            "node": "AI智能提示词生成",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "模板提示词合成",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "套图提示词批量生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI智能提示词生成": {
+      "main": [
+        [
+          {
+            "node": "调用Stability AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "模板提示词合成": {
+      "main": [
+        [
+          {
+            "node": "调用Stability AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "套图提示词批量生成": {
+      "main": [
+        [
+          {
+            "node": "调用Stability AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用Stability AI": {
+      "main": [
+        [
+          {
+            "node": "准备上传",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备上传": {
+      "main": [
+        [
+          {
+            "node": "上传到腾讯云COS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "上传到腾讯云COS": {
+      "main": [
+        [
+          {
+            "node": "格式化结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式化结果": {
+      "main": [
+        [
+          {
+            "node": "回调云函数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "回调云函数": {
+      "main": [
+        [
+          {
+            "node": "返回响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler-workflow"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-12T00:00:00.000Z",
+  "versionId": "1.0.0"
+}

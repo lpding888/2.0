@@ -309,6 +309,60 @@
   font-size: 28rpx;
 }
 
+/* 个人功能区 */
+.personal-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.feature-btn {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #fff9f0 0%, #ffffff 100%);
+  border-radius: 20rpx;
+  border: 2rpx solid #ffe8d6;
+  transition: all 0.3s;
+  box-shadow: 0 4rpx 12rpx rgba(255, 154, 86, 0.1);
+}
+
+.feature-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(255, 154, 86, 0.15);
+}
+
+.feature-icon {
+  width: 88rpx;
+  height: 88rpx;
+  background: linear-gradient(135deg, #FF9A56 0%, #FF6B35 100%);
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  margin-right: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 53, 0.3);
+}
+
+.feature-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.feature-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.feature-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
 /* 主题按钮（沿用主/强调色） */
 .btn-primary {
   background: linear-gradient(90deg, #FF7A30, #FF9A5C);
@@ -376,4 +430,64 @@
 .admin-btn:hover {
   box-shadow: 0 6rpx 20rpx rgba(255, 107, 107, 0.6);
   transform: translateY(-2rpx);
+}
+
+/* 个人模式统计卡片 */
+.stats-card {
+  display: flex;
+  background: linear-gradient(135deg, #FF9A56 0%, #FF6B35 100%);
+  padding: 40rpx 20rpx;
+  border-radius: 24rpx;
+  margin: 20rpx 0;
+  box-shadow: 0 8rpx 32rpx rgba(255, 154, 86, 0.3);
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+}
+
+.stat-number {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.3);
+  align-self: center;
+}
+
+/* 模式切换区域 */
+.mode-switch-content {
+  padding: 20rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.mode-hint {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 个人模式退出登录 */
+.logout-section {
+  margin-top: 40rpx;
+  padding: 0 20rpx;
+}
+
+.logout-section .btn {
+  width: 100%;
 }

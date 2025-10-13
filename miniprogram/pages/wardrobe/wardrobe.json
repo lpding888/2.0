@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "我的衣柜",
-  "navigationBarBackgroundColor": "#667eea",
+  "navigationBarBackgroundColor": "#FF9A56",
   "navigationBarTextStyle": "white",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#667eea"
+  "backgroundColor": "#fff9f0"
 }

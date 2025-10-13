@@ -699,6 +699,21 @@ Page({
   },
 
   onShow() {
+    // 更新自定义TabBar（先刷新列表，再设置选中）
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      const mode = wx.getStorageSync('app_mode') || 'commercial'
+      const tabBar = this.getTabBar()
+
+      // 刷新TabBar的tab列表
+      if (tabBar.updateList) {
+        tabBar.updateList()
+      }
+
+      // 设置选中状态
+      const selected = mode === 'commercial' ? 1 : 2 // 商业=1, 个人=2
+      tabBar.setData({ selected })
+    }
+
     this._isPageVisible = true;
 
     // 🔧 防御性检查：确保关键数据结构已初始化

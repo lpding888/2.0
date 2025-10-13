@@ -50,6 +50,10 @@
             <text class="iconfont {{work.is_favorite ? 'icon-heart-fill' : 'icon-heart'}}"></text>
             <text>{{work.is_favorite ? '已收藏' : '收藏'}}</text>
           </button>
+          <button class="quick-btn" bindtap="saveToMemory">
+            <text class="iconfont icon-camera"></text>
+            <text>存回忆</text>
+          </button>
         </view>
       </view>
     </view>

@@ -1,296 +1,152 @@
-<!--我的衣柜页面 - 人性化增强版-->
-<view class="container page-slide-up">
-  <!-- 页面标题 -->
-  <view class="page-header">
-    <text class="page-title">👔 我的衣柜</text>
-    <text class="page-subtitle">智能管理你的服装收藏</text>
-  </view>
-
-  <!-- 搜索框 -->
-  <view class="search-bar">
-    <view class="search-input-wrapper">
-      <text class="search-icon">🔍</text>
-      <input
-        class="search-input"
-        placeholder="搜索服装名称、颜色..."
-        value="{{searchKeyword}}"
-        bindinput="onSearchInput"
-      />
-      <text wx:if="{{searchKeyword}}" class="clear-icon" bindtap="clearSearch">×</text>
+<!--我的衣柜 - 智能管理版-->
+<wxs module="utils" src="./wardrobe.wxs"></wxs>
+<view class="wardrobe-container">
+  <!-- 顶部标题栏 -->
+  <view class="header">
+    <text class="title">我的衣柜</text>
+    <view class="header-action" bindtap="onShowSearch">
+      <text class="action-icon">🔍</text>
     </view>
   </view>
 
-  <!-- 视图模式切换 -->
-  <view class="view-mode-tabs">
-    <view
-      class="mode-tab {{viewMode === 'clothing' ? 'active' : ''}}"
-      bindtap="switchViewMode"
-      data-mode="clothing"
-    >
-      <text>👕 单品</text>
+  <!-- 分类筛选栏 -->
+  <scroll-view class="category-scroll" scroll-x enable-flex>
+    <view class="category-list">
+      <view
+        class="category-item {{currentCategory === item.key ? 'active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="key"
+        bindtap="switchCategory"
+        data-category="{{item.key}}"
+      >
+        <text class="category-icon">{{item.icon}}</text>
+        <text class="category-name">{{item.label}}</text>
+      </view>
     </view>
-    <view
-      class="mode-tab {{viewMode === 'outfit' ? 'active' : ''}}"
-      bindtap="switchViewMode"
-      data-mode="outfit"
-    >
-      <text>👔 套装</text>
-    </view>
-  </view>
+  </scroll-view>
 
-  <!-- 服装视图 -->
-  <block wx:if="{{viewMode === 'clothing'}}">
+  <!-- 衣物展示区 -->
+  <view class="content-area">
     <!-- 空状态 -->
-    <view wx:if="{{clothingList.length === 0 && !loading}}" class="empty-state">
-      <text class="empty-icon">👔</text>
-      <text class="empty-text">衣柜空空如也</text>
-      <text class="empty-hint">添加服装图片到你的专属衣柜吧</text>
-      <button class="add-btn" bindtap="addClothing">
-        <text class="btn-icon">➕</text>
-        <text>添加服装</text>
-      </button>
+    <view class="empty-state" wx:if="{{clothingList.length === 0 && !loading}}">
+      <view class="empty-icon">👔</view>
+      <text class="empty-title">衣柜空空如也</text>
+      <text class="empty-hint">快来添加第一件衣物吧~</text>
+      <view class="empty-tip">
+        <text>💡 提示：点击右下角的 + 按钮开始添加</text>
+      </view>
     </view>
 
-    <!-- 服装列表 -->
-    <view wx:else class="content-area">
-      <!-- 筛选栏 -->
-      <view class="filter-section">
-        <!-- 分类筛选 -->
-        <view class="filter-row">
-          <text class="filter-label">分类</text>
-          <scroll-view class="filter-scroll" scroll-x>
-            <view class="filter-tabs">
-              <block wx:for="{{categories}}" wx:key="key">
-                <view
-                  class="filter-tab {{currentCategory === item.key ? 'active' : ''}}"
-                  bindtap="switchCategory"
-                  data-category="{{item.key}}"
-                >
-                  <text class="tab-icon">{{item.icon}}</text>
-                  <text class="tab-label">{{item.label}}</text>
-                </view>
-              </block>
-            </view>
-          </scroll-view>
+    <!-- 衣物网格 -->
+    <view class="clothes-grid" wx:else>
+      <view
+        class="clothes-item"
+        wx:for="{{clothingList}}"
+        wx:key="id"
+        bindtap="onClothesClick"
+        data-item="{{item}}"
+        bindlongpress="onClothesLongPress"
+        data-id="{{item.id}}"
+      >
+        <!-- 衣物图片容器 -->
+        <view class="clothes-image-wrapper">
+          <image
+            class="clothes-image"
+            src="{{item.processedImage || item.url}}"
+            mode="aspectFit"
+            lazy-load
+          ></image>
+
+          <!-- 常穿标记 -->
+          <view class="favorite-badge" wx:if="{{item.isFavorite}}">⭐</view>
         </view>
 
-        <!-- 季节筛选 -->
-        <view class="filter-row">
-          <text class="filter-label">季节</text>
-          <scroll-view class="filter-scroll" scroll-x>
-            <view class="filter-tabs">
-              <block wx:for="{{seasons}}" wx:key="key">
-                <view
-                  class="filter-tab {{currentSeason === item.key ? 'active' : ''}}"
-                  bindtap="switchSeason"
-                  data-season="{{item.key}}"
-                >
-                  <text class="tab-icon">{{item.icon}}</text>
-                  <text class="tab-label">{{item.label}}</text>
-                </view>
-              </block>
-            </view>
-          </scroll-view>
-        </view>
-
-        <!-- 排序和操作按钮 -->
-        <view class="action-row">
-          <view class="sort-btn" bindtap="showSortMenu">
-            <text class="sort-icon">⇅</text>
-            <text class="sort-text">
-              {{sortType === 'recent' ? '最近添加' : sortType === 'frequent' ? '使用频率' : sortType === 'favorite' ? '常穿优先' : '名称排序'}}
+        <!-- 衣物信息 -->
+        <view class="clothes-info">
+          <text class="clothes-name">{{item.name || '未命名'}}</text>
+          <view class="clothes-meta">
+            <text class="clothes-category">{{utils.getCategoryName(item.category)}}</text>
+            <text class="use-count" wx:if="{{item.useCount > 0}}">穿过{{item.useCount}}次</text>
+          </view>
+          <view class="clothes-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+            <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">
+              #{{tag}}
             </text>
           </view>
-          <view class="action-btns">
-            <view class="icon-btn" bindtap="createOutfit">
-              <text>👔</text>
-            </view>
-            <view class="icon-btn primary" bindtap="addClothing">
-              <text>➕</text>
-            </view>
-          </view>
         </view>
       </view>
-
-      <!-- 服装网格 -->
-      <view class="clothing-grid">
-        <block wx:for="{{clothingList}}" wx:key="id">
-          <view
-            class="clothing-card"
-            bindtap="viewClothing"
-            bindlongpress="onClothingLongPress"
-            data-item="{{item}}"
-          >
-            <!-- 常穿标记 -->
-            <view wx:if="{{item.isFavorite}}" class="favorite-badge">⭐</view>
-
-            <!-- 服装图片 -->
-            <image class="clothing-image" src="{{item.url}}" mode="aspectFill" lazy-load></image>
-
-            <!-- 颜色标签 -->
-            <view wx:if="{{item.color}}" class="color-tag">
-              <view class="color-dot" style="background: {{item.color === 'black' ? '#000' : item.color === 'white' ? '#fff' : item.color === 'red' ? '#f00' : item.color === 'blue' ? '#06f' : item.color === 'green' ? '#0c6' : item.color === 'yellow' ? '#fd7' : item.color === 'pink' ? '#f69' : item.color === 'gray' ? '#888' : item.color === 'brown' ? '#8b4513' : '#93d'}}; border: {{item.color === 'white' ? '1rpx solid #ddd' : 'none'}};"></view>
-            </view>
-
-            <!-- 服装信息 -->
-            <view class="clothing-info">
-              <view class="clothing-header">
-                <text class="clothing-name">{{item.name || '未命名'}}</text>
-                <text class="use-count" wx:if="{{item.useCount > 0}}">×{{item.useCount}}</text>
-              </view>
-              <view class="clothing-footer">
-                <text class="clothing-category">{{item.category === 'top' ? '上衣' : item.category === 'bottom' ? '下装' : item.category === 'shoes' ? '鞋子' : '其他'}}</text>
-                <view class="season-icons">
-                  <block wx:if="{{item.seasons && item.seasons.length > 0}}">
-                    <text wx:for="{{item.seasons}}" wx:key="*this" wx:if="{{item !== 'all-season'}}" class="season-mini-icon">
-                      {{item === 'spring' ? '🌸' : item === 'summer' ? '☀️' : item === 'autumn' ? '🍂' : item === 'winter' ? '❄️' : '🌈'}}
-                    </text>
-                  </block>
-                </view>
-              </view>
-            </view>
-
-            <!-- 操作按钮 -->
-            <view class="clothing-actions">
-              <view class="action-btn use-btn" catchtap="useClothing" data-item="{{item}}">
-                <text>使用</text>
-              </view>
-            </view>
-          </view>
-        </block>
-      </view>
     </view>
-  </block>
+  </view>
 
-  <!-- 套装视图 -->
-  <block wx:if="{{viewMode === 'outfit'}}">
-    <!-- 空状态 -->
-    <view wx:if="{{outfitList.length === 0 && !loading}}" class="empty-state">
-      <text class="empty-icon">👔</text>
-      <text class="empty-text">还没有套装</text>
-      <text class="empty-hint">创建套装，一键试穿完整搭配</text>
-      <button class="add-btn" bindtap="createOutfit">
-        <text class="btn-icon">➕</text>
-        <text>创建套装</text>
-      </button>
-    </view>
-
-    <!-- 套装列表 -->
-    <view wx:else class="content-area">
-      <view class="outfit-grid">
-        <block wx:for="{{outfitList}}" wx:key="id">
-          <view class="outfit-card">
-            <!-- 套装预览图 -->
-            <view class="outfit-preview">
-              <block wx:for="{{item.items}}" wx:key="id" wx:for-item="clothing">
-                <image class="outfit-item-image" src="{{clothing.url}}" mode="aspectFill" lazy-load></image>
-              </block>
-            </view>
-
-            <!-- 套装信息 -->
-            <view class="outfit-info">
-              <view class="outfit-header">
-                <text class="outfit-name">{{item.name}}</text>
-                <text class="use-count" wx:if="{{item.useCount > 0}}">×{{item.useCount}}</text>
-              </view>
-              <text class="outfit-count">{{item.items.length}}件单品</text>
-            </view>
-
-            <!-- 操作按钮 -->
-            <view class="outfit-actions">
-              <view class="action-btn use-btn" bindtap="useOutfit" data-outfit="{{item}}">
-                <text>试穿</text>
-              </view>
-              <view class="action-btn delete-btn" bindtap="deleteOutfit" data-id="{{item.id}}">
-                <text>删除</text>
-              </view>
-            </view>
-          </view>
-        </block>
-      </view>
-
-      <!-- 创建套装按钮 -->
-      <view class="floating-add-btn" bindtap="createOutfit">
-        <text>➕</text>
-      </view>
-    </view>
-  </block>
+  <!-- 悬浮添加按钮 (FAB) -->
+  <view class="fab" bindtap="onAddClothes">
+    <text class="fab-icon">+</text>
+  </view>
 
   <!-- 加载状态 -->
-  <view wx:if="{{loading}}" class="loading-container">
+  <view class="loading-overlay" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
     <text class="loading-text">加载中...</text>
   </view>
+</view>
 
-  <!-- 排序菜单弹窗 -->
-  <view wx:if="{{showSortMenu}}" class="modal-mask" bindtap="hideSortMenu">
-    <view class="sort-menu" catchtap>
-      <view class="menu-title">排序方式</view>
-      <view
-        class="menu-item {{sortType === 'recent' ? 'active' : ''}}"
-        bindtap="switchSort"
-        data-sort="recent"
-      >
-        <text>最近添加</text>
-        <text wx:if="{{sortType === 'recent'}}" class="check-icon">✓</text>
-      </view>
-      <view
-        class="menu-item {{sortType === 'frequent' ? 'active' : ''}}"
-        bindtap="switchSort"
-        data-sort="frequent"
-      >
-        <text>使用频率</text>
-        <text wx:if="{{sortType === 'frequent'}}" class="check-icon">✓</text>
-      </view>
-      <view
-        class="menu-item {{sortType === 'favorite' ? 'active' : ''}}"
-        bindtap="switchSort"
-        data-sort="favorite"
-      >
-        <text>常穿优先</text>
-        <text wx:if="{{sortType === 'favorite'}}" class="check-icon">✓</text>
-      </view>
-      <view
-        class="menu-item {{sortType === 'name' ? 'active' : ''}}"
-        bindtap="switchSort"
-        data-sort="name"
-      >
-        <text>名称排序</text>
-        <text wx:if="{{sortType === 'name'}}" class="check-icon">✓</text>
-      </view>
+<!-- 搜索弹窗 -->
+<view class="search-modal {{showSearch ? 'show' : ''}}" catchtap="onCloseSearch">
+  <view class="search-content" catchtap="stopPropagation">
+    <view class="search-input-wrapper">
+      <text class="search-icon-input">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索衣物名称、标签..."
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+        bindconfirm="onSearchConfirm"
+        focus="{{showSearch}}"
+      />
+      <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">×</view>
     </view>
-  </view>
 
-  <!-- 创建套装弹窗 -->
-  <view wx:if="{{showOutfitModal}}" class="modal-mask" bindtap="closeOutfitModal">
-    <view class="outfit-modal" catchtap>
-      <view class="modal-header">
-        <text class="modal-title">选择服装创建套装</text>
-        <view class="modal-close" bindtap="closeOutfitModal">×</view>
-      </view>
-
-      <scroll-view class="outfit-select-list" scroll-y>
-        <block wx:for="{{clothingListForOutfit}}" wx:key="id" wx:for-index="idx">
-          <view
-            class="outfit-select-item {{item.isSelected ? 'selected' : ''}}"
-            bindtap="toggleClothingForOutfit"
-            data-item="{{item}}"
-            data-index="{{idx}}"
-          >
-            <image class="select-item-image" src="{{item.url}}" mode="aspectFill" lazy-load></image>
-            <view class="select-item-info">
-              <text class="select-item-name">{{item.name}}</text>
-              <text class="select-item-category">{{item.category === 'top' ? '上衣' : item.category === 'bottom' ? '下装' : item.category === 'shoes' ? '鞋子' : '其他'}}</text>
-            </view>
-            <view wx:if="{{item.isSelected}}" class="select-check">✓</view>
+    <!-- 搜索结果 -->
+    <view class="search-results" wx:if="{{searchKeyword}}">
+      <view class="result-count">找到 {{searchResults.length}} 件衣物</view>
+      <view class="result-list">
+        <view
+          class="result-item"
+          wx:for="{{searchResults}}"
+          wx:key="id"
+          bindtap="onSearchResultClick"
+          data-item="{{item}}"
+        >
+          <image class="result-image" src="{{item.processedImage || item.url}}" mode="aspectFit"></image>
+          <view class="result-info">
+            <text class="result-name">{{item.name}}</text>
+            <text class="result-category">{{utils.getCategoryName(item.category)}}</text>
           </view>
-        </block>
-      </scroll-view>
-
-      <view class="modal-footer">
-        <text class="selected-count">已选 {{selectedClothingForOutfit.length}} 件</text>
-        <button class="confirm-btn" bindtap="saveOutfit">创建套装</button>
+        </view>
       </view>
     </view>
+
+    <!-- 搜索历史 -->
+    <view class="search-history" wx:if="{{!searchKeyword && searchHistory.length > 0}}">
+      <view class="history-header">
+        <text class="history-title">搜索历史</text>
+        <text class="history-clear" bindtap="onClearHistory">清空</text>
+      </view>
+      <view class="history-list">
+        <view
+          class="history-item"
+          wx:for="{{searchHistory}}"
+          wx:key="*this"
+          bindtap="onHistoryClick"
+          data-keyword="{{item}}"
+        >
+          <text class="history-icon">🕐</text>
+          <text class="history-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="search-cancel" bindtap="onCloseSearch">取消</view>
   </view>
 </view>

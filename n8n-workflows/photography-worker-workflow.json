@@ -1,0 +1,638 @@
+{
+  "name": "AI摄影-Worker处理工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "定时触发",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 400]
+    },
+    {
+      "parameters": {
+        "operation": "rpop",
+        "key": "task_queue:photography:pending"
+      },
+      "id": "pop-task",
+      "name": "从队列获取任务",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "credentials": {
+        "redis": {
+          "id": "redis-main",
+          "name": "Redis Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-task-exists",
+      "name": "判断任务是否存在",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析任务JSON\nconst taskJson = $input.item.json;\nconst task = typeof taskJson === 'string' ? JSON.parse(taskJson) : taskJson;\n\n// 标记处理开始时间\ntask.status = 'processing';\ntask.processingStartedAt = new Date().toISOString();\ntask.updatedAt = new Date().toISOString();\n\nreturn { json: task };"
+      },
+      "id": "parse-task",
+      "name": "解析任务对象",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sadd",
+        "key": "task_queue:photography:processing",
+        "value": "={{ $json.taskId }}"
+      },
+      "id": "mark-processing",
+      "name": "标记为处理中",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "redis": {
+          "id": "redis-main",
+          "name": "Redis Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.images[0] }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-image",
+      "name": "下载服装图片",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 将图片转换为Base64\nconst binaryData = items[0].binary.data;\nconst buffer = await binaryData.data;\nconst base64Image = buffer.toString('base64');\n\nconst task = $node[\"解析任务对象\"].json;\n\nreturn {\n  json: {\n    ...task,\n    base64Image: base64Image,\n    mimeType: 'image/jpeg'\n  }\n};"
+      },
+      "id": "convert-base64",
+      "name": "转换为Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ $env.PROMPT_COMPOSITION_WORKFLOW_ID }}",
+        "options": {
+          "inputData": "={{ JSON.stringify({\n    mode: $json.mode,\n    params: $json.params,\n    frontendPrompt: $json.prompts.frontend\n  }) }}"
+        }
+      },
+      "id": "call-prompt-workflow",
+      "name": "调用提示词合成工作流",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取可用API密钥\nconst redis = $('推送到Redis队列').redis; // 获取Redis连接\n\n// 获取所有可用密钥\nconst availableKeysJson = await $redis.lrange('api_keys:google:available', 0, -1);\nconst busyKeys = await $redis.smembers('api_keys:google:busy');\nconst rateLimitKeys = await $redis.smembers('api_keys:google:rate_limit');\n\n// 解析并过滤密钥\nconst availableKeys = availableKeysJson\n  .map(k => JSON.parse(k))\n  .filter(key => {\n    const keyStr = JSON.stringify({ id: key.id });\n    return !busyKeys.includes(keyStr) && !rateLimitKeys.includes(keyStr);\n  })\n  .sort((a, b) => (a.currentUsage / a.weight) - (b.currentUsage / b.weight));\n\nif (availableKeys.length === 0) {\n  throw new Error('NO_AVAILABLE_API_KEYS: 当前没有可用的API密钥');\n}\n\nconst task = $input.item.json;\nconst count = task.params.count;\n\n// 为套图选择多个密钥\nconst maxConcurrentPerKey = 3;\nconst requiredKeys = Math.min(\n  Math.ceil(count / maxConcurrentPerKey),\n  availableKeys.length\n);\n\nconst selectedKeys = availableKeys.slice(0, requiredKeys);\n\n// 标记密钥为busy\nfor (const key of selectedKeys) {\n  await $redis.sadd('api_keys:google:busy', JSON.stringify({ id: key.id }));\n  key.currentUsage++;\n}\n\nreturn {\n  json: {\n    ...task,\n    selectedApiKeys: selectedKeys,\n    promptData: $node[\"调用提示词合成工作流\"].json\n  }\n};"
+      },
+      "id": "get-api-keys",
+      "name": "获取可用API密钥",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 准备批量生成任务\nconst task = $input.item.json;\nconst prompts = task.promptData.finalPrompts;\nconst apiKeys = task.selectedApiKeys;\nconst base64Image = $node[\"转换为Base64\"].json.base64Image;\n\nconst maxConcurrentPerKey = 3;\nconst batches = [];\n\n// 为每张图分配API密钥和提示词\nfor (let i = 0; i < prompts.length; i++) {\n  const keyIndex = Math.floor(i / maxConcurrentPerKey) % apiKeys.length;\n  batches.push({\n    index: i,\n    apiKey: apiKeys[keyIndex],\n    prompt: prompts[i],\n    base64Image: base64Image,\n    taskId: task.taskId\n  });\n}\n\nreturn batches.map(batch => ({ json: batch }));"
+      },
+      "id": "prepare-batches",
+      "name": "准备批量生成任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-in-batches",
+      "name": "循环处理每张图",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://\" + $env.GOOGLE_AI_LOCATION + \"-aiplatform.googleapis.com/v1/projects/\" + $env.GOOGLE_AI_PROJECT_ID + \"/locations/\" + $env.GOOGLE_AI_LOCATION + \"/publishers/google/models/imagegeneration@006:predict\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"instances\": [{\n    \"prompt\": $json.prompt,\n    \"image\": {\n      \"bytesBase64Encoded\": $json.base64Image\n    },\n    \"parameters\": {\n      \"sampleCount\": 1,\n      \"aspectRatio\": \"1:1\",\n      \"safetyFilterLevel\": \"block_some\",\n      \"personGeneration\": \"allow_adult\"\n    }\n  }]\n} }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "call-google-ai",
+      "name": "调用Google AI API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2450, 300],
+      "credentials": {
+        "googleApi": {
+          "id": "google-ai-credentials",
+          "name": "Google AI API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-error",
+      "name": "检查是否有错误",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 错误处理逻辑\nconst error = $input.item.json.error;\nconst task = $node[\"获取可用API密钥\"].json;\nconst batch = $node[\"循环处理每张图\"].json;\n\n// 定义可重试错误\nconst RETRIABLE_ERRORS = {\n  'RATE_LIMIT_EXCEEDED': { retry: true, switchKey: true, backoff: 60000, maxRetries: 5 },\n  'RESOURCE_EXHAUSTED': { retry: true, switchKey: true, backoff: 60000, maxRetries: 5 },\n  'INTERNAL': { retry: true, switchKey: false, backoff: 5000, maxRetries: 3 },\n  'UNAVAILABLE': { retry: true, switchKey: true, backoff: 30000, maxRetries: 3 },\n  'DEADLINE_EXCEEDED': { retry: true, switchKey: false, backoff: 10000, maxRetries: 3 }\n};\n\nconst NON_RETRIABLE_ERRORS = [\n  'INVALID_ARGUMENT',\n  'PERMISSION_DENIED',\n  'UNAUTHENTICATED',\n  'FAILED_PRECONDITION'\n];\n\n// 提取错误码\nlet errorCode = 'UNKNOWN_ERROR';\nif (error.message) {\n  const match = error.message.match(/\\[(\\w+)\\]/);\n  if (match) errorCode = match[1];\n}\n\nconst errorInfo = {\n  code: errorCode,\n  message: error.message || '未知错误',\n  timestamp: new Date().toISOString(),\n  batchIndex: batch.index\n};\n\n// 判断是否可重试\nif (RETRIABLE_ERRORS[errorCode]) {\n  const retryConfig = RETRIABLE_ERRORS[errorCode];\n  \n  if (task.retryCount < retryConfig.maxRetries) {\n    // 可以重试\n    if (retryConfig.switchKey) {\n      // 标记当前密钥为rate limit\n      const keyId = batch.apiKey.id;\n      await $redis.sadd('api_keys:google:rate_limit', JSON.stringify({ id: keyId }));\n      await $redis.expire(`api_keys:google:rate_limit:${keyId}`, retryConfig.backoff / 1000);\n      \n      errorInfo.action = 'switch_key';\n    }\n    \n    errorInfo.action = 'retry';\n    errorInfo.retryAfter = retryConfig.backoff;\n    errorInfo.retriable = true;\n  } else {\n    errorInfo.action = 'failed_max_retries';\n    errorInfo.retriable = false;\n  }\n} else {\n  // 不可重试错误\n  errorInfo.action = 'failed_permanent';\n  errorInfo.retriable = false;\n}\n\nreturn {\n  json: {\n    ...batch,\n    error: errorInfo,\n    shouldRetry: errorInfo.retriable === true\n  }\n};"
+      },
+      "id": "handle-error",
+      "name": "处理错误",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2850, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.shouldRetry }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-should-retry",
+      "name": "判断是否重试",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [3050, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 重新入队\nconst task = $node[\"获取可用API密钥\"].json;\nconst error = $input.item.json.error;\n\ntask.retryCount++;\ntask.errors.push(error);\ntask.status = 'pending';\ntask.updatedAt = new Date().toISOString();\n\n// 延迟后重新入队\nsetTimeout(async () => {\n  await $redis.lpush('task_queue:photography:pending', JSON.stringify(task));\n}, error.retryAfter || 5000);\n\nreturn {\n  json: {\n    taskId: task.taskId,\n    action: 'requeued',\n    retryCount: task.retryCount,\n    retryAfter: error.retryAfter\n  }\n};"
+      },
+      "id": "requeue-task",
+      "name": "重新入队",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 标记任务失败\nconst task = $node[\"获取可用API密钥\"].json;\nconst error = $input.item.json.error;\n\ntask.status = 'failed';\ntask.errors.push(error);\ntask.updatedAt = new Date().toISOString();\ntask.completedAt = new Date().toISOString();\n\n// 移入失败队列\nawait $redis.lpush('task_queue:photography:failed', JSON.stringify(task));\nawait $redis.srem('task_queue:photography:processing', task.taskId);\nawait $redis.hset(`task_status:${task.taskId}`, 'data', JSON.stringify(task));\n\nreturn { json: task };"
+      },
+      "id": "mark-failed",
+      "name": "标记任务失败",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析AI响应并提取图片\nconst response = $input.item.json;\nconst batch = $node[\"循环处理每张图\"].json;\n\nif (!response.predictions || response.predictions.length === 0) {\n  throw new Error('AI响应中没有生成的图片');\n}\n\nconst prediction = response.predictions[0];\nconst imageBase64 = prediction.bytesBase64Encoded;\n\nreturn {\n  json: {\n    batchIndex: batch.index,\n    imageBase64: imageBase64,\n    mimeType: prediction.mimeType || 'image/png'\n  }\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "解析AI响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2850, 400]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $env.TENCENT_COS_UPLOAD_URL }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "tencentCloudApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image",
+              "value": "={{ $json.imageBase64 }}"
+            },
+            {
+              "name": "folder",
+              "value": "photography"
+            },
+            {
+              "name": "taskId",
+              "value": "={{ $node[\"获取可用API密钥\"].json.taskId }}"
+            }
+          ]
+        }
+      },
+      "id": "upload-to-cos",
+      "name": "上传到腾讯云COS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3050, 400],
+      "credentials": {
+        "tencentCloudApi": {
+          "id": "tencent-cloud",
+          "name": "Tencent Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 保存生成结果\nconst task = $node[\"获取可用API密钥\"].json;\nconst batch = $node[\"循环处理每张图\"].json;\nconst cosUrl = $input.item.json.url;\n\ntask.results.push({\n  index: batch.index,\n  url: cosUrl,\n  timestamp: new Date().toISOString()\n});\n\ntask.updatedAt = new Date().toISOString();\n\n// 更新Redis\nawait $redis.hset(`task_status:${task.taskId}`, 'data', JSON.stringify(task));\n\nreturn {\n  json: {\n    ...task,\n    currentResult: {\n      index: batch.index,\n      url: cosUrl\n    },\n    progress: task.results.length / task.params.count\n  }\n};"
+      },
+      "id": "save-result",
+      "name": "保存结果到Redis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLOUD_FUNCTION_CALLBACK_URL }}/photography/progress",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"taskId\": $json.taskId,\n  \"status\": \"processing\",\n  \"progress\": $json.progress,\n  \"currentResult\": $json.currentResult,\n  \"totalCount\": $json.params.count,\n  \"completedCount\": $json.results.length\n} }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "callback-progress",
+      "name": "回调进度更新",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3450, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $node[\"保存结果到Redis\"].json.results.length }}",
+              "operation": "equal",
+              "value2": "={{ $node[\"保存结果到Redis\"].json.params.count }}"
+            }
+          ]
+        }
+      },
+      "id": "check-all-completed",
+      "name": "检查是否全部完成",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [3650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 标记任务完成\nconst task = $input.item.json;\ntask.status = 'completed';\ntask.completedAt = new Date().toISOString();\ntask.updatedAt = new Date().toISOString();\n\n// 更新Redis\nawait $redis.hset(`task_status:${task.taskId}`, 'data', JSON.stringify(task));\nawait $redis.srem('task_queue:photography:processing', task.taskId);\n\n// 释放所有API密钥\nfor (const key of task.selectedApiKeys) {\n  await $redis.srem('api_keys:google:busy', JSON.stringify({ id: key.id }));\n  key.currentUsage--;\n}\n\nreturn { json: task };"
+      },
+      "id": "mark-completed",
+      "name": "标记任务完成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLOUD_FUNCTION_CALLBACK_URL }}/photography/completed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"taskId\": $json.taskId,\n  \"status\": \"completed\",\n  \"results\": $json.results,\n  \"totalTime\": new Date($json.completedAt).getTime() - new Date($json.createdAt).getTime(),\n  \"retryCount\": $json.retryCount\n} }}"
+      },
+      "id": "callback-completed",
+      "name": "回调任务完成",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [4050, 300]
+    }
+  ],
+  "connections": {
+    "定时触发": {
+      "main": [
+        [
+          {
+            "node": "从队列获取任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "从队列获取任务": {
+      "main": [
+        [
+          {
+            "node": "判断任务是否存在",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "判断任务是否存在": {
+      "main": [
+        [
+          {
+            "node": "解析任务对象",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "解析任务对象": {
+      "main": [
+        [
+          {
+            "node": "标记为处理中",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "标记为处理中": {
+      "main": [
+        [
+          {
+            "node": "下载服装图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载服装图片": {
+      "main": [
+        [
+          {
+            "node": "转换为Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "转换为Base64": {
+      "main": [
+        [
+          {
+            "node": "调用提示词合成工作流",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用提示词合成工作流": {
+      "main": [
+        [
+          {
+            "node": "获取可用API密钥",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获取可用API密钥": {
+      "main": [
+        [
+          {
+            "node": "准备批量生成任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备批量生成任务": {
+      "main": [
+        [
+          {
+            "node": "循环处理每张图",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环处理每张图": {
+      "main": [
+        [
+          {
+            "node": "调用Google AI API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "检查是否全部完成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用Google AI API": {
+      "main": [
+        [
+          {
+            "node": "检查是否有错误",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查是否有错误": {
+      "main": [
+        [
+          {
+            "node": "处理错误",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "解析AI响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "处理错误": {
+      "main": [
+        [
+          {
+            "node": "判断是否重试",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "判断是否重试": {
+      "main": [
+        [
+          {
+            "node": "重新入队",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "标记任务失败",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析AI响应": {
+      "main": [
+        [
+          {
+            "node": "上传到腾讯云COS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "上传到腾讯云COS": {
+      "main": [
+        [
+          {
+            "node": "保存结果到Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存结果到Redis": {
+      "main": [
+        [
+          {
+            "node": "回调进度更新",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "回调进度更新": {
+      "main": [
+        [
+          {
+            "node": "循环处理每张图",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查是否全部完成": {
+      "main": [
+        [
+          {
+            "node": "标记任务完成",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "标记任务完成": {
+      "main": [
+        [
+          {
+            "node": "回调任务完成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler-workflow"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "photography",
+      "name": "摄影系统"
+    },
+    {
+      "id": "worker",
+      "name": "Worker"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1.0.0"
+}

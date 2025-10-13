@@ -7,6 +7,27 @@
     <text class="page-subtitle">上传衣服，AI摄影师为你拍出专业大片</text>
   </view>
 
+  <!-- 功能入口卡片 -->
+  <view class="feature-cards">
+    <navigator url="/pages/photography/flatlay/flatlay" class="feature-card" hover-class="card-hover">
+      <view class="card-icon">📐</view>
+      <view class="card-content">
+        <text class="card-title">静态拍摄</text>
+        <text class="card-desc">平铺挂拍·智能优化·一键白底</text>
+      </view>
+      <view class="card-arrow">›</view>
+    </navigator>
+
+    <navigator url="/pages/photography/photoset/photoset" class="feature-card" hover-class="card-hover">
+      <view class="card-icon">🎬</view>
+      <view class="card-content">
+        <text class="card-title">套图生成</text>
+        <text class="card-desc">一键生成·9张套图·多角度展示</text>
+      </view>
+      <view class="card-arrow">›</view>
+    </navigator>
+  </view>
+
   <!-- 服装图片上传 -->
   <view class="section">
     <view class="section-title">
