@@ -1,0 +1,129 @@
+{
+  "summaryGeneratedAt": "2025-10-13T00:00:00Z",
+  "languages": [
+    { "name": "JavaScript", "percent": 37.49 },
+    { "name": "JSON", "percent": 20.21 },
+    { "name": "Markdown", "percent": 17.35 },
+    { "name": "WXML", "percent": 7.98 },
+    { "name": "WXSS", "percent": 7.54 },
+    { "name": "TypeScript/TSX", "percent": 3.05 },
+    { "name": "PowerShell", "percent": 1.56 },
+    { "name": "HTML", "percent": 1.33 },
+    { "name": "SQL", "percent": 0.74 },
+    { "name": "Other", "percent": 2.75 }
+  ],
+  "frameworks": [
+    "WeChat Miniprogram (微信小程序)",
+    "Tencent Cloud Cloudbase (wx-server-sdk)",
+    "Cloud Functions (Serverless)",
+    "Express (ai-photo-system/backend)",
+    "Next.js 14 (ai-photo-system/web)",
+    "n8n (workflows)",
+    "Redis + Bull (队列)",
+    "MySQL (持久化)"
+  ],
+  "packageManagers": ["npm"],
+  "runtimeTooling": [
+    "Node.js >=18 (backend/web)",
+    "Node.js 16.x (大部分云函数)",
+    "部分云函数package.json声明 Nodejs14.18",
+    "WeChat DevTools",
+    "Docker (rembg, nginx)"
+  ],
+  "entryPoints": {
+    "miniprogram": [
+      "miniprogram/app.json"
+    ],
+    "cloudfunctions": [
+      "cloudfunctions/ai-callback/index.js",
+      "cloudfunctions/ai-stylist/index.js",
+      "cloudfunctions/aimodels/index.js",
+      "cloudfunctions/api/index.js",
+      "cloudfunctions/auth/index.js",
+      "cloudfunctions/cache-helper/index.js",
+      "cloudfunctions/database-init/index.js",
+      "cloudfunctions/debug-scenes/index.js",
+      "cloudfunctions/fitting/index.js",
+      "cloudfunctions/fitting-worker/index.js",
+      "cloudfunctions/force-admin/index.js",
+      "cloudfunctions/payment/index.js",
+      "cloudfunctions/personal/index.js",
+      "cloudfunctions/personal-worker/index.js",
+      "cloudfunctions/photography/index.js",
+      "cloudfunctions/photography-worker/index.js",
+      "cloudfunctions/prompt/index.js",
+      "cloudfunctions/scene/index.js",
+      "cloudfunctions/storage/index.js",
+      "cloudfunctions/task-processor/index.js",
+      "cloudfunctions/tencent-ci-matting/index.js",
+      "cloudfunctions/user/index.js"
+    ],
+    "backend": ["ai-photo-system/backend/src/app.js"],
+    "web": ["ai-photo-system/web (Next.js commands)"]
+  },
+  "envAndConfig": {
+    "files": [
+      "cloudbaserc.json",
+      "project.config.json",
+      "project.private.config.json",
+      "ai-photo-system/backend/.env.example",
+      "ai-photo-system/web/.env.example",
+      "n8n-workflows/.env.template",
+      "n8n-workflows/docker-compose.yml"
+    ],
+    "secretsRisk": [
+      {
+        "path": "ai-photo-system/backend/.env.example",
+        "note": "包含 DB_*、JWT_*、AI_API_KEY_* 等键名（值未列出）"
+      },
+      {
+        "path": "ai-photo-system/web/.env.example",
+        "note": "包含前端运行所需环境键名（值未列出）"
+      },
+      {
+        "path": "project.config.json",
+        "note": "包含小程序 appid（建议避免在公开文档中直接展示）"
+      }
+    ]
+  },
+  "dependencyGraphTopLevel": {
+    "miniprogram": ["wx.* (平台API)"],
+    "cloudfunctions (common)": ["wx-server-sdk ~2.6.3"],
+    "backend": [
+      "express", "mysql2", "redis", "bull", "axios", "multer", "ws",
+      "jsonwebtoken", "bcryptjs", "dotenv", "cors", "helmet", "morgan",
+      "compression", "express-rate-limit", "joi", "uuid", "moment",
+      "crypto-js", "qrcode", "winston", "@sentry/node"
+    ],
+    "web": [
+      "next@14", "react@18", "axios", "socket.io-client", "react-dropzone",
+      "qrcode", "jszip", "file-saver", "swiper", "dayjs", "zustand",
+      "react-hot-toast", "framer-motion", "react-icons", "@headlessui/react",
+      "classnames"
+    ],
+    "admin-tools": ["axios"]
+  },
+  "buildRunTest": {
+    "miniprogram": {
+      "dev": "微信开发者工具打开项目根目录（cloud=true）",
+      "test": "内置脚本与 cloudfunctions 联调",
+      "deploy": "使用 scripts/deploy/deploy-cloudfunctions.ps1 部署云函数"
+    },
+    "cloudfunctions": {
+      "install": "各函数目录执行 npm i（存在 package-lock.json）",
+      "deploy": "scripts/deploy/*.ps1"
+    },
+    "backend": {
+      "scripts": { "start": "node src/app.js", "dev": "nodemon src/app.js", "test": "jest", "lint": "eslint src/" },
+      "engine": ">=18"
+    },
+    "web": {
+      "scripts": { "dev": "next dev -p 3001", "build": "next build", "start": "next start -p 3001", "lint": "next lint" },
+      "engine": ">=18"
+    },
+    "ops": {
+      "scriptsFolder": "scripts/ (deploy, debug, fix, setup, test, temp, backup)"
+    }
+  }
+}
+
