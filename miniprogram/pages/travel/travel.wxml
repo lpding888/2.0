@@ -5,7 +5,7 @@
   <!-- 页面标题 -->
   <view class="page-header">
     <text class="page-title">🌍 全球旅行</text>
-    <text class="page-subtitle">AI带你打卡世界各地美景</text>
+    <text class="page-subtitle">AI 带你打卡世界各地美景</text>
   </view>
 
   <!-- 个人照片上传 -->

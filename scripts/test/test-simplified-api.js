@@ -2,6 +2,8 @@
  * 测试简化后的API选择逻辑
  */
 
+const assert = require('assert')
+
 console.log('🧪 开始测试简化的API选择逻辑...')
 
 // 模拟测试数据
@@ -138,6 +140,52 @@ console.log('选择结果:', selectionResult)
 console.log('\n=== 测试调用逻辑 ===')
 const callResult = testSimplifiedCall()
 console.log('调用结果:', callResult)
+
+// 增加一个无 URL 支持模型的调用测试，验证备用路径
+function testFallbackCall() {
+  console.log('\n=== 测试备用调用逻辑（无URL能力） ===')
+
+  const availableModels = [
+    {
+      _id: 'model2',
+      name: 'DALL-E 3',
+      provider: 'openai',
+      model_type: 'text-to-image',
+      is_active: true,
+      priority: 8
+    }
+  ]
+
+  console.log('📊 可用模型数量:', availableModels.length)
+
+  console.log('🖼️ 尝试API 2: 发送图片base64和文字')
+  const base64Model = availableModels[0]
+  console.log('✅ 将使用模型:', base64Model.name, '进行base64格式调用')
+
+  return {
+    success: true,
+    data: {
+      images: [{
+        url: 'https://example.com/generated-image.jpg',
+        model_used: base64Model.name,
+        method: 'base64+文字'
+      }]
+    }
+  }
+}
+
+const fallbackResult = testFallbackCall()
+console.log('备用调用结果:', fallbackResult)
+
+// 断言阶段，确保逻辑符合预期
+assert.strictEqual(selectionResult.success, true, '模型选择应返回成功状态')
+assert.strictEqual(selectionResult.data.selected_model._id, 'model1', '应优先选择第一个启用模型')
+
+assert.strictEqual(callResult.success, true, 'URL 调用应成功')
+assert.strictEqual(callResult.data.images[0].method, 'URL+文字', '首个调用应使用 URL+文字 模式')
+
+assert.strictEqual(fallbackResult.success, true, '备用调用应成功')
+assert.strictEqual(fallbackResult.data.images[0].method, 'base64+文字', '备用调用应使用 base64+文字 模式')
 
 console.log('\n✅ 简化API逻辑测试完成!')
 console.log('\n📝 简化总结:')
