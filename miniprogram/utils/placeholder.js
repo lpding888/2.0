@@ -5,7 +5,8 @@
 
 class PlaceholderService {
   /**
-   * 生成占位图片的base64数据
+   * 创建占位图片的 Canvas 上下文
+   * 返回的上下文可用于后续通过 `canvasToTempFilePath` 导出实际图片
    * @param {number} width 宽度
    * @param {number} height 高度
    * @param {string} text 显示文字

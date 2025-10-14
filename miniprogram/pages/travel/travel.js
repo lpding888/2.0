@@ -116,12 +116,25 @@ Page({
       const res = await uploadService.chooseAndUploadImage({
         count: 1,
         fileType: 'user',
-        base64Mode: true
+        convertToJpeg: true
       })
 
-      this.setData({ userPhoto: res.files[0] })
+      if (res.success && res.data?.uploaded?.length) {
+        const uploadedImage = res.data.uploaded[0]
+        this.setData({
+          userPhoto: {
+            fileId: uploadedImage.fileId,
+            url: uploadedImage.localPath || uploadedImage.fileId
+          }
+        })
+
+        wx.showToast({ title: '上传成功', icon: 'success' })
+      } else {
+        throw new Error('没有有效的图片')
+      }
     } catch (error) {
       if (error !== 'cancel') {
+        console.error('选择用户照片失败:', error)
         wx.showToast({
           title: '上传失败',
           icon: 'error'
@@ -200,8 +213,7 @@ Page({
       }
 
       // 调用personal云函数生成旅行照片
-      const result = await apiService.callCloudFunction({
-        name: 'personal',
+      const result = await apiService.callCloudFunction('personal', {
         action: 'create',
         data: {
           type: 'travel',

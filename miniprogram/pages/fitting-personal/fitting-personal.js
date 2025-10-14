@@ -599,8 +599,7 @@ Page({
       console.log('个人试衣生成参数:', params)
 
       // 调用云函数创建任务
-      const result = await apiService.callCloudFunction({
-        name: 'personal',
+      const result = await apiService.callCloudFunction('personal', {
         action: 'create',
         data: params
       })
