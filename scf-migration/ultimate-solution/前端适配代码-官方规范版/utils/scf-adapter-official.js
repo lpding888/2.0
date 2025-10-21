@@ -121,43 +121,14 @@ class SCFAdapterOfficial {
       // 构建Function URL请求
       const functionUrl = `${this.baseUrl}/${functionName}`
 
-      // 请求体格式
-      const requestBody = {
-        // 腾讯云SCF标准事件格式
-        version: '1.0',
-        resource: functionUrl,
-        path: `/${functionName}`,
-        httpMethod: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'WeChat-MiniProgram-SCF-Adapter/1.0'
-        },
-        queryStringParameters: {},
-        body: JSON.stringify({
-          // 兼容微信云开发的action模式
-          action: data.action,
-          openid: this.openid,
-          appid: this.appid,
-          unionid: this.unionid,
-          ...data
-        }),
-        requestContext: {
-          requestId: this.generateRequestId(),
-          stage: 'RELEASE',
-          httpMethod: 'POST',
-          path: `/${functionName}`,
-          resourceId: 'default',
-          serviceId: 'scf',
-          domain: this.baseUrl.replace('https://', '').replace('/', ''),
-          domainPrefix: this.baseUrl.replace('https://', '').split('/')[0],
-          httpMethod: 'POST',
-          apiId: 'scf-function-url',
-          protocol: 'HTTP/1.1',
-          identity: {
-            sourceIp: '127.0.0.1',
-            userAgent: 'WeChat-MiniProgram'
-          }
-        }
+      // 构建请求数据 - 直接发送业务数据，让SCF函数处理事件格式
+      const requestData = {
+        // 兼容微信云开发的action模式
+        action: data.action,
+        openid: this.openid,
+        appid: this.appid,
+        unionid: this.unionid,
+        ...data
       }
 
       // 发送HTTP请求
@@ -166,9 +137,10 @@ class SCFAdapterOfficial {
         header: {
           'Content-Type': 'application/json',
           'X-Openid': this.openid || '',
-          'X-Appid': this.appid || ''
+          'X-Appid': this.appid || '',
+          'User-Agent': 'WeChat-MiniProgram-SCF-Adapter/1.0'
         },
-        data: JSON.parse(requestBody.body)
+        data: requestData
       })
 
       return response
