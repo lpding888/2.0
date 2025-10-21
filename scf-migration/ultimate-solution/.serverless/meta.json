@@ -1,0 +1,383 @@
+{
+  "C:\\Users\\qq100\\Desktop\\迭代目录\\2.0\\scf-migration\\ultimate-solution\\serverless.yml": {
+    "versionFramework": "4.21.1",
+    "servicePath": "C:\\Users\\qq100\\Desktop\\迭代目录\\2.0\\scf-migration\\ultimate-solution\\serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "ai-photography-ultimate",
+      "provider": {
+        "name": "tencent",
+        "runtime": "Nodejs18.15",
+        "region": "ap-guangzhou",
+        "environment": {
+          "MONGODB_URI": "${env:MONGODB_URI}",
+          "REDIS_URI": "${env:REDIS_URI}",
+          "JWT_SECRET": "<REDACTED>",
+          "WECHAT_APP_ID": "${env:WECHAT_APP_ID}",
+          "WECHAT_APP_SECRET": "<REDACTED>",
+          "COS_SECRET_ID": "<REDACTED>",
+          "COS_SECRET_KEY": "<REDACTED>",
+          "COS_BUCKET": "${env:COS_BUCKET}",
+          "COS_REGION": "${env:COS_REGION}",
+          "OPENAI_API_KEY": "<REDACTED>",
+          "GEMINI_API_KEY": "<REDACTED>",
+          "SEEDREAM_API_KEY": "<REDACTED>",
+          "DEEPSEEK_API_KEY": "<REDACTED>",
+          "BUSINESS_MODE": "${env:BUSINESS_MODE}",
+          "ENABLE_CATALOG_INTEGRATION": "${env:ENABLE_CATALOG_INTEGRATION}"
+        }
+      },
+      "custom": {
+        "project": {
+          "name": "ai-photography",
+          "version": 2,
+          "mode": "${env:BUSINESS_MODE, 'personal'}"
+        },
+        "aiModels": {
+          "commercial": {
+            "primary": "seedream-v4",
+            "fallback": [
+              "gemini-2.0",
+              "gpt-4-vision"
+            ],
+            "costOptimized": "deepseek-vision"
+          },
+          "personal": {
+            "primary": "gemini-2.0",
+            "fallback": [
+              "seedream-v4-lite",
+              "deepseek-vision"
+            ],
+            "free": "gpt-3.5-turbo-vision"
+          }
+        },
+        "resources": {
+          "api": {
+            "memory": "256MB",
+            "timeout": "30s",
+            "concurrency": 100
+          },
+          "ai-generation": {
+            "memory": "2048MB",
+            "timeout": "300s",
+            "concurrency": 20,
+            "provisioned": 1
+          },
+          "image-processing": {
+            "memory": "1024MB",
+            "timeout": "120s",
+            "concurrency": 50
+          }
+        }
+      },
+      "functions": {
+        "api-gateway": {
+          "handler": "src/handlers/api-gateway.main",
+          "description": "统一API网关 - 路由所有请求",
+          "memorySize": "${self:custom.resources.api.memory}",
+          "timeout": "${self:custom.resources.api.timeout}",
+          "reservedConcurrency": "${self:custom.resources.api.concurrency}",
+          "layers": [
+            {
+              "name": "common-dependencies",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/api/{action}",
+                "method": "ANY",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "api-gateway",
+              "ENABLE_AUTH_MIDDLEWARE": true,
+              "RATE_LIMIT_ENABLED": true
+            }
+          }
+        },
+        "user-service": {
+          "handler": "src/handlers/user-service.main",
+          "description": "用户管理 - 注册登录、积分系统、权限控制",
+          "memorySize": "${self:custom.resources.api.memory}",
+          "timeout": "${self:custom.resources.api.timeout}",
+          "layers": [
+            {
+              "name": "common-dependencies",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/user/{action}",
+                "method": "POST",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "user-service",
+              "ENABLE_CREDIT_SYSTEM": true,
+              "ENABLE_SUBSCRIPTION": "${env:ENABLE_SUBSCRIPTION, 'false'}"
+            }
+          }
+        },
+        "ai-generation-service": {
+          "handler": "src/handlers/ai-generation.main",
+          "description": "AI生成服务 - 支持个人虚拟试衣+商业服装摄影",
+          "memorySize": "${self:custom.resources.ai-generation.memory}",
+          "timeout": "${self:custom.resources.ai-generation.timeout}",
+          "reservedConcurrency": "${self:custom.resources.ai-generation.concurrency}",
+          "layers": [
+            {
+              "name": "ai-dependencies",
+              "version": 1
+            },
+            {
+              "name": "image-processing",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/ai/{action}",
+                "method": "POST",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "ai-generation",
+              "ENABLE_SEEDREAM_V4": true,
+              "ENABLE_GEMINI_2": true,
+              "ENABLE_DEEPSEEK": true,
+              "ENABLE_CATALOG_INTEGRATION": "${env:ENABLE_CATALOG_INTEGRATION, 'false'}",
+              "DEFAULT_AI_MODEL": "${self:custom.aiModels.${self:custom.project.mode}.primary}"
+            }
+          }
+        },
+        "ci-service": {
+          "handler": "src/handlers/ci-service.main",
+          "description": "数据万象服务 - 智能抠图、修复、质量评估",
+          "memorySize": "${self:custom.resources.image-processing.memory}",
+          "timeout": "${self:custom.resources.image-processing.timeout}",
+          "layers": [
+            {
+              "name": "ci-dependencies",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/ci/{action}",
+                "method": "POST",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "ci-service",
+              "ENABLE_INTELLIGENT_MATTING": true,
+              "ENABLE_SMART_CROP": true,
+              "ENABLE_IMAGE_RESTORE": true,
+              "ENABLE_QUALITY_ASSESS": true
+            }
+          }
+        },
+        "payment-service": {
+          "handler": "src/handlers/payment-service.main",
+          "description": "支付服务 - 积分充值、订阅管理、订单处理",
+          "memorySize": "${self:custom.resources.api.memory}",
+          "timeout": "${self:custom.resources.api.timeout}",
+          "layers": [
+            {
+              "name": "common-dependencies",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/payment/{action}",
+                "method": "POST",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "payment-service",
+              "ENABLE_WECHAT_PAY": true,
+              "ENABLE_SUBSCRIPTION": "${env:ENABLE_SUBSCRIPTION, 'false'}",
+              "ENABLE_CREDIT_PACKAGES": true
+            }
+          }
+        },
+        "admin-service": {
+          "handler": "src/handlers/admin-service.main",
+          "description": "管理后台 - 用户管理、数据统计、AI模型配置",
+          "memorySize": "${self:custom.resources.api.memory}",
+          "timeout": "${self:custom.resources.api.timeout}",
+          "layers": [
+            {
+              "name": "common-dependencies",
+              "version": 1
+            }
+          ],
+          "events": [
+            {
+              "http": {
+                "path": "/admin/{action}",
+                "method": "POST",
+                "cors": true
+              }
+            }
+          ],
+          "environment": {
+            "variables": {
+              "FUNCTION_TYPE": "admin-service",
+              "ADMIN_SECRET": "<REDACTED>",
+              "ENABLE_ANALYTICS": true,
+              "ENABLE_MODEL_MANAGEMENT": true
+            }
+          }
+        }
+      },
+      "layers": {
+        "common-dependencies": {
+          "path": "layers/common",
+          "description": "通用依赖包 - MongoDB客户端、JWT、工具函数",
+          "compatibleRuntimes": [
+            "Nodejs18.15"
+          ],
+          "license": "MIT"
+        },
+        "ai-dependencies": {
+          "path": "layers/ai",
+          "description": "AI处理依赖包 - OpenAI、Gemini、Seedream客户端",
+          "compatibleRuntimes": [
+            "Nodejs18.15"
+          ],
+          "license": "MIT"
+        },
+        "ci-dependencies": {
+          "path": "layers/ci",
+          "description": "数据万象依赖包 - COS客户端、CI处理",
+          "compatibleRuntimes": [
+            "Nodejs18.15"
+          ],
+          "license": "MIT"
+        },
+        "image-processing": {
+          "path": "layers/image-processing",
+          "description": "图片处理依赖包 - JIMP、Sharp等",
+          "compatibleRuntimes": [
+            "Nodejs18.15"
+          ],
+          "license": "MIT"
+        }
+      },
+      "plugins": [
+        "serverless-offline",
+        "serverless-dotenv-plugin",
+        "serverless-prune-plugin"
+      ],
+      "outputs": {
+        "ApiGatewayUrl": {
+          "Description": "统一API网关地址",
+          "Value": {
+            "Fn::GetAtt": [
+              "api-gateway",
+              "HttpsUrl"
+            ]
+          }
+        },
+        "AiGenerationUrl": {
+          "Description": "AI生成服务地址",
+          "Value": {
+            "Fn::GetAtt": [
+              "ai-generation-service",
+              "HttpsUrl"
+            ]
+          }
+        },
+        "CIServiceUrl": {
+          "Description": "数据万象服务地址",
+          "Value": {
+            "Fn::GetAtt": [
+              "ci-service",
+              "HttpsUrl"
+            ]
+          }
+        },
+        "ServiceName": {
+          "Description": "服务名称",
+          "Value": "${self:service}"
+        },
+        "DeploymentRegion": {
+          "Description": "部署区域",
+          "Value": "${self:provider.region}"
+        }
+      },
+      "package": {
+        "individually": true,
+        "exclude": [
+          ".git/**",
+          ".serverless/**",
+          "node_modules/**",
+          "README.md",
+          ".env*",
+          "logs/**",
+          "coverage/**",
+          "test/**"
+        ]
+      }
+    },
+    "provider": {
+      "name": "tencent",
+      "runtime": "Nodejs18.15",
+      "region": "ap-guangzhou",
+      "environment": {
+        "MONGODB_URI": "${env:MONGODB_URI}",
+        "REDIS_URI": "${env:REDIS_URI}",
+        "JWT_SECRET": "<REDACTED>",
+        "WECHAT_APP_ID": "${env:WECHAT_APP_ID}",
+        "WECHAT_APP_SECRET": "<REDACTED>",
+        "COS_SECRET_ID": "<REDACTED>",
+        "COS_SECRET_KEY": "<REDACTED>",
+        "COS_BUCKET": "${env:COS_BUCKET}",
+        "COS_REGION": "${env:COS_REGION}",
+        "OPENAI_API_KEY": "<REDACTED>",
+        "GEMINI_API_KEY": "<REDACTED>",
+        "SEEDREAM_API_KEY": "<REDACTED>",
+        "DEEPSEEK_API_KEY": "<REDACTED>",
+        "BUSINESS_MODE": "${env:BUSINESS_MODE}",
+        "ENABLE_CATALOG_INTEGRATION": "${env:ENABLE_CATALOG_INTEGRATION}"
+      }
+    },
+    "error": {
+      "message": "You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".",
+      "stack": "Error: You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".\n    at Authentication.getAuthenticatedData (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:708:10911)\n    at async Authentication.authenticate (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:710:22530)\n    at async _CoreRunner.authenticate (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:717:1632)\n    at async _CoreRunner.run (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:1031:6467)\n    at async route (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:1511:2878)\n    at async Object.run (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:1512:3755)\n    at async run2 (file:///C:/Users/qq100/.serverless/releases/4.21.1/package/dist/sf-core.js:1512:4909)"
+    },
+    "serviceRawFile": "# AI摄影师小程序 - 终极部署配置\r\n# 支持个人版+商业版双模式架构\r\n\r\nservice: ai-photography-ultimate\r\n\r\n# 全局配置\r\nprovider:\r\n  name: tencent\r\n  runtime: Nodejs18.15\r\n  region: ap-guangzhou\r\n\r\n  # 环境变量（从 .env 加载）\r\n  environment:\r\n    # 数据库配置\r\n    MONGODB_URI: ${env:MONGODB_URI}\r\n    REDIS_URI: ${env:REDIS_URI}\r\n\r\n    # 认证配置\r\n    JWT_SECRET: ${env:JWT_SECRET}\r\n    WECHAT_APP_ID: ${env:WECHAT_APP_ID}\r\n    WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}\r\n\r\n    # 存储配置\r\n    COS_SECRET_ID: ${env:COS_SECRET_ID}\r\n    COS_SECRET_KEY: ${env:COS_SECRET_KEY}\r\n    COS_BUCKET: ${env:COS_BUCKET}\r\n    COS_REGION: ${env:COS_REGION}\r\n\r\n    # AI 服务配置（多厂商路由）\r\n    OPENAI_API_KEY: ${env:OPENAI_API_KEY}\r\n    GEMINI_API_KEY: ${env:GEMINI_API_KEY}\r\n    SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}\r\n    DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}\r\n\r\n    # 业务模式配置\r\n    BUSINESS_MODE: ${env:BUSINESS_MODE} # personal/commercial/hybrid\r\n    ENABLE_CATALOG_INTEGRATION: ${env:ENABLE_CATALOG_INTEGRATION}\r\n\r\n# 自定义变量\r\ncustom:\r\n  # 项目配置\r\n  project:\r\n    name: ai-photography\r\n    version: 2.0\r\n    mode: ${env:BUSINESS_MODE, 'personal'}\r\n\r\n  # AI 模型配置\r\n  aiModels:\r\n    # 商业版优先级排序\r\n    commercial:\r\n      primary: \"seedream-v4\"     # Seedream 4.0 (服装摄影专用)\r\n      fallback: [\"gemini-2.0\", \"gpt-4-vision\"]\r\n      costOptimized: \"deepseek-vision\"\r\n\r\n    # 个人版优先级排序\r\n    personal:\r\n      primary: \"gemini-2.0\"      # Gemini 2.0 (性价比高)\r\n      fallback: [\"seedream-v4-lite\", \"deepseek-vision\"]\r\n      free: \"gpt-3.5-turbo-vision\"\r\n\r\n  # 函数资源配置\r\n  resources:\r\n    # API 服务（轻量级）\r\n    api:\r\n      memory: 256MB\r\n      timeout: 30s\r\n      concurrency: 100\r\n\r\n    # AI 生成服务（高配置）\r\n    ai-generation:\r\n      memory: 2048MB\r\n      timeout: 300s  # 5分钟，适配复杂AI任务\r\n      concurrency: 20\r\n      provisioned: 1 # 预留1个实例，减少冷启动\r\n\r\n    # 图片处理服务（中配）\r\n    image-processing:\r\n      memory: 1024MB\r\n      timeout: 120s\r\n      concurrency: 50\r\n\r\n# 函数定义 - 按业务域划分\r\nfunctions:\r\n\r\n  # === 核心 API 服务 ===\r\n  api-gateway:\r\n    handler: src/handlers/api-gateway.main\r\n    description: 统一API网关 - 路由所有请求\r\n    memorySize: ${self:custom.resources.api.memory}\r\n    timeout: ${self:custom.resources.api.timeout}\r\n    reservedConcurrency: ${self:custom.resources.api.concurrency}\r\n\r\n    layers:\r\n      - name: common-dependencies\r\n        version: 1\r\n\r\n    events:\r\n      # Function URL 方式（替代 API Gateway）\r\n      - http:\r\n          path: /api/{action}\r\n          method: ANY\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: api-gateway\r\n        ENABLE_AUTH_MIDDLEWARE: true\r\n        RATE_LIMIT_ENABLED: true\r\n\r\n  # === 用户管理服务 ===\r\n  user-service:\r\n    handler: src/handlers/user-service.main\r\n    description: 用户管理 - 注册登录、积分系统、权限控制\r\n    memorySize: ${self:custom.resources.api.memory}\r\n    timeout: ${self:custom.resources.api.timeout}\r\n\r\n    layers:\r\n      - name: common-dependencies\r\n        version: 1\r\n\r\n    events:\r\n      - http:\r\n          path: /user/{action}\r\n          method: POST\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: user-service\r\n        ENABLE_CREDIT_SYSTEM: true\r\n        ENABLE_SUBSCRIPTION: ${env:ENABLE_SUBSCRIPTION, 'false'}\r\n\r\n  # === AI 生成服务（双模式支持） ===\r\n  ai-generation-service:\r\n    handler: src/handlers/ai-generation.main\r\n    description: AI生成服务 - 支持个人虚拟试衣+商业服装摄影\r\n    memorySize: ${self:custom.resources.ai-generation.memory}\r\n    timeout: ${self:custom.resources.ai-generation.timeout}\r\n    reservedConcurrency: ${self:custom.resources.ai-generation.concurrency}\r\n\r\n    layers:\r\n      - name: ai-dependencies\r\n        version: 1\r\n      - name: image-processing\r\n        version: 1\r\n\r\n    events:\r\n      - http:\r\n          path: /ai/{action}\r\n          method: POST\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: ai-generation\r\n        ENABLE_SEEDREAM_V4: true\r\n        ENABLE_GEMINI_2: true\r\n        ENABLE_DEEPSEEK: true\r\n        ENABLE_CATALOG_INTEGRATION: ${env:ENABLE_CATALOG_INTEGRATION, 'false'}\r\n        DEFAULT_AI_MODEL: ${self:custom.aiModels.${self:custom.project.mode}.primary}\r\n\r\n  # === 数据万象 CI 服务 ===\r\n  ci-service:\r\n    handler: src/handlers/ci-service.main\r\n    description: 数据万象服务 - 智能抠图、修复、质量评估\r\n    memorySize: ${self:custom.resources.image-processing.memory}\r\n    timeout: ${self:custom.resources.image-processing.timeout}\r\n\r\n    layers:\r\n      - name: ci-dependencies\r\n        version: 1\r\n\r\n    events:\r\n      - http:\r\n          path: /ci/{action}\r\n          method: POST\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: ci-service\r\n        ENABLE_INTELLIGENT_MATTING: true\r\n        ENABLE_SMART_CROP: true\r\n        ENABLE_IMAGE_RESTORE: true\r\n        ENABLE_QUALITY_ASSESS: true\r\n\r\n  # === 支付服务（商业版） ===\r\n  payment-service:\r\n    handler: src/handlers/payment-service.main\r\n    description: 支付服务 - 积分充值、订阅管理、订单处理\r\n    memorySize: ${self:custom.resources.api.memory}\r\n    timeout: ${self:custom.resources.api.timeout}\r\n\r\n    layers:\r\n      - name: common-dependencies\r\n        version: 1\r\n\r\n    events:\r\n      - http:\r\n          path: /payment/{action}\r\n          method: POST\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: payment-service\r\n        ENABLE_WECHAT_PAY: true\r\n        ENABLE_SUBSCRIPTION: ${env:ENABLE_SUBSCRIPTION, 'false'}\r\n        ENABLE_CREDIT_PACKAGES: true\r\n\r\n  # === 管理后台服务 ===\r\n  admin-service:\r\n    handler: src/handlers/admin-service.main\r\n    description: 管理后台 - 用户管理、数据统计、AI模型配置\r\n    memorySize: ${self:custom.resources.api.memory}\r\n    timeout: ${self:custom.resources.api.timeout}\r\n\r\n    layers:\r\n      - name: common-dependencies\r\n        version: 1\r\n\r\n    events:\r\n      - http:\r\n          path: /admin/{action}\r\n          method: POST\r\n          cors: true\r\n\r\n    environment:\r\n      variables:\r\n        FUNCTION_TYPE: admin-service\r\n        ADMIN_SECRET: ${env:ADMIN_SECRET}\r\n        ENABLE_ANALYTICS: true\r\n        ENABLE_MODEL_MANAGEMENT: true\r\n\r\n# === 共享层定义 ===\r\nlayers:\r\n  # 通用依赖层（数据库、认证等）\r\n  common-dependencies:\r\n    path: layers/common\r\n    description: 通用依赖包 - MongoDB客户端、JWT、工具函数\r\n    compatibleRuntimes:\r\n      - Nodejs18.15\r\n    license: MIT\r\n\r\n  # AI 处理依赖层（AI模型调用、图片处理）\r\n  ai-dependencies:\r\n    path: layers/ai\r\n    description: AI处理依赖包 - OpenAI、Gemini、Seedream客户端\r\n    compatibleRuntimes:\r\n      - Nodejs18.15\r\n    license: MIT\r\n\r\n  # 数据万象依赖层\r\n  ci-dependencies:\r\n    path: layers/ci\r\n    description: 数据万象依赖包 - COS客户端、CI处理\r\n    compatibleRuntimes:\r\n      - Nodejs18.15\r\n    license: MIT\r\n\r\n  # 图片处理依赖层\r\n  image-processing:\r\n    path: layers/image-processing\r\n    description: 图片处理依赖包 - JIMP、Sharp等\r\n    compatibleRuntimes:\r\n      - Nodejs18.15\r\n    license: MIT\r\n\r\n# === 插件配置 ===\r\nplugins:\r\n  - serverless-offline          # 本地开发\r\n  - serverless-dotenv-plugin    # 环境变量管理\r\n  - serverless-prune-plugin     # 自动清理旧版本\r\n\r\n# === 输出配置 ===\r\noutputs:\r\n  # 函数 URL 输出\r\n  ApiGatewayUrl:\r\n    Description: 统一API网关地址\r\n    Value:\r\n      Fn::GetAtt: [api-gateway, HttpsUrl]\r\n\r\n  AiGenerationUrl:\r\n    Description: AI生成服务地址\r\n    Value:\r\n      Fn::GetAtt: [ai-generation-service, HttpsUrl]\r\n\r\n  CIServiceUrl:\r\n    Description: 数据万象服务地址\r\n    Value:\r\n      Fn::GetAtt: [ci-service, HttpsUrl]\r\n\r\n  # 部署信息\r\n  ServiceName:\r\n    Description: 服务名称\r\n    Value: ${self:service}\r\n\r\n  DeploymentRegion:\r\n    Description: 部署区域\r\n    Value: ${self:provider.region}\r\n\r\n# === 打包配置 ===\r\npackage:\r\n  individually: true  # 每个函数独立打包\r\n  exclude:\r\n    - .git/**\r\n    - .serverless/**\r\n    - node_modules/**\r\n    - README.md\r\n    - .env*\r\n    - logs/**\r\n    - coverage/**\r\n    - test/**",
+    "command": [
+      "login"
+    ],
+    "options": {},
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

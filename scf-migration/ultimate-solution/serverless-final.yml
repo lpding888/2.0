@@ -1,0 +1,184 @@
+# AI摄影师小程序 - 腾讯云SCF部署配置
+# Serverless Framework V3 + serverless-tencent-scf插件
+
+service: ai-photography-scf
+
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+  credentials: ~/.tencentcloud/credentials.ini
+
+  # 环境变量
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    REDIS_URI: ${env:REDIS_URI}
+    JWT_SECRET: ${env:JWT_SECRET}
+    WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+    WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+    COS_SECRET_ID: ${env:COS_SECRET_ID}
+    COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+    COS_BUCKET: ${env:COS_BUCKET}
+    COS_REGION: ${env:COS_REGION}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}
+    DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}
+    BUSINESS_MODE: ${env:BUSINESS_MODE, 'hybrid'}
+
+# 函数定义
+functions:
+
+  # 统一API网关
+  api-gateway:
+    handler: api-gateway.main_handler
+    description: 统一API网关 - 路由所有请求
+    memorySize: 512
+    timeout: 30
+    events:
+      - apigw:
+          path: /api
+          method: ANY
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: api-gateway
+
+  # 用户管理服务
+  user-service:
+    handler: user-service.main_handler
+    description: 用户管理 - 注册登录、积分系统
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          path: /user
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: user-service
+
+  # AI生成服务
+  ai-generation:
+    handler: ai-generation.main_handler
+    description: AI生成服务 - 摄影和试衣
+    memorySize: 2048
+    timeout: 900  # 15分钟
+    events:
+      - apigw:
+          path: /ai
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: ai-generation
+
+  # 商业摄影服务
+  photography-service:
+    handler: photography-service.main_handler
+    description: 商业服装摄影服务
+    memorySize: 2048
+    timeout: 900  # 15分钟
+    events:
+      - apigw:
+          path: /photography
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: photography-service
+
+  # 虚拟试衣服务
+  fitting-service:
+    handler: fitting-service.main_handler
+    description: 虚拟试衣服务
+    memorySize: 2048
+    timeout: 900  # 15分钟
+    events:
+      - apigw:
+          path: /fitting
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: fitting-service
+
+  # 场景管理服务
+  scene-service:
+    handler: scene-service.main_handler
+    description: 场景管理服务
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          path: /scene
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: scene-service
+
+  # 提示词生成服务
+  prompt-service:
+    handler: prompt-service.main_handler
+    description: 提示词生成服务
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          path: /prompt
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: prompt-service
+
+  # 任务处理器
+  task-processor:
+    handler: task-processor.main_handler
+    description: 任务状态机处理器
+    memorySize: 512
+    timeout: 300  # 5分钟
+    events:
+      - apigw:
+          path: /task
+          method: POST
+          cors: true
+    environment:
+      variables:
+        FUNCTION_TYPE: task-processor
+
+# 插件配置
+plugins:
+  - serverless-tencent-scf
+  - serverless-dotenv-plugin
+
+# 输出配置
+outputs:
+  ApiGatewayUrl:
+    Description: API网关地址
+    Value:
+      Fn::GetAtt: [api-gateway, Url]
+
+  ServiceName:
+    Description: 服务名称
+    Value: ${self:service}
+
+  DeploymentRegion:
+    Description: 部署区域
+    Value: ${self:provider.region}
+
+# 打包配置
+package:
+  individually: true
+  exclude:
+    - .git/**
+    - node_modules/**
+    - README.md
+    - .env*
+    - logs/**
+    - docs/**
+    - scripts/**
+    - serverless.yml

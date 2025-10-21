@@ -1,0 +1,203 @@
+# AI摄影师小程序 - 腾讯云SCF正确架构
+# 保持原项目设计理念，充分利用SCF优势
+
+service: ai-photography-scf
+
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+  credentials: ~/.tencentcloud/credentials.ini
+
+  # 环境变量
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    REDIS_URI: ${env:REDIS_URI}
+    JWT_SECRET: ${env:JWT_SECRET}
+    WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+    WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+    COS_SECRET_ID: ${env:COS_SECRET_ID}
+    COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+    COS_BUCKET: ${env:COS_BUCKET}
+    COS_REGION: ${env:COS_REGION}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}
+    DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}
+    BUSINESS_MODE: ${env:BUSINESS_MODE, 'hybrid'}
+
+# 函数定义 - 保持原项目架构，每个函数是完整业务单元
+functions:
+
+  # 统一API入口 - 保持原项目的action路由模式
+  api:
+    handler: api.main_handler
+    description: 统一API入口 - action路由模式
+    memorySize: 512
+    timeout: 30
+    type: web  # Function URL + 原项目action模式
+    environment:
+      variables:
+        FUNCTION_TYPE: api
+
+  # 摄影业务函数 - 完整的摄影业务逻辑
+  photography:
+    handler: photography.main_handler
+    description: 服装摄影业务 - 包含状态机和异步处理
+    memorySize: 2048
+    timeout: 900  # 15分钟，充分利用SCF优势
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: photography
+
+  # 试衣业务函数 - 完整的试衣业务逻辑
+  fitting:
+    handler: fitting.main_handler
+    description: 虚拟试衣业务 - 包含状态机和异步处理
+    memorySize: 2048
+    timeout: 900  # 15分钟
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: fitting
+
+  # 用户管理函数 - 保持原项目逻辑
+  user:
+    handler: user.main_handler
+    description: 用户管理 - 注册登录、积分系统
+    memorySize: 256
+    timeout: 30
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: user
+
+  # 文件存储函数 - 包含去重和权限控制
+  storage:
+    handler: storage.main_handler
+    description: 文件存储管理 - MD5去重、权限控制
+    memorySize: 512
+    timeout: 60
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: storage
+
+  # AI模型选择函数 - 智能路由
+  aimodels:
+    handler: aimodels.main_handler
+    description: AI模型选择和路由 - 智能选择最优模型
+    memorySize: 256
+    timeout: 30
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: aimodels
+
+  # 场景管理函数 - 场景数据和模板
+  scene:
+    handler: scene.main_handler
+    description: 场景管理 - 场景数据、模板、参数
+    memorySize: 256
+    timeout: 30
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: scene
+
+  # 提示词生成函数 - AI提示词管理
+  prompt:
+    handler: prompt.main_handler
+    description: 提示词生成和管理 - AI提示词模板
+    memorySize: 256
+    timeout: 30
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: prompt
+
+  # 通用任务处理器 - 增强版worker
+  task-worker:
+    handler: task-worker.main_handler
+    description: 通用任务处理器 - 支持长时间任务
+    memorySize: 2048
+    timeout: 1800  # 30分钟，充分利用SCF优势
+    type: web
+    environment:
+      variables:
+        FUNCTION_TYPE: task-worker
+
+# 插件配置
+plugins:
+  - serverless-tencent-scf
+  - serverless-dotenv-plugin
+
+# 输出配置 - Function URL地址
+outputs:
+  ApiUrl:
+    Description: API入口Function URL地址
+    Value:
+      Fn::GetAtt: [api, Url]
+
+  PhotographyUrl:
+    Description: 摄影服务Function URL地址
+    Value:
+      Fn::GetAtt: [photography, Url]
+
+  FittingUrl:
+    Description: 试衣服务Function URL地址
+    Value:
+      Fn::GetAtt: [fitting, Url]
+
+  UserUrl:
+    Description: 用户服务Function URL地址
+    Value:
+      Fn::GetAtt: [user, Url]
+
+  StorageUrl:
+    Description: 存储服务Function URL地址
+    Value:
+      Fn::GetAtt: [storage, Url]
+
+  AiModelsUrl:
+    Description: AI模型服务Function URL地址
+    Value:
+      Fn::GetAtt: [aimodels, Url]
+
+  SceneUrl:
+    Description: 场景服务Function URL地址
+    Value:
+      Fn::GetAtt: [scene, Url]
+
+  PromptUrl:
+    Description: 提示词服务Function URL地址
+    Value:
+      Fn::GetAtt: [prompt, Url]
+
+  TaskWorkerUrl:
+    Description: 任务处理器Function URL地址
+    Value:
+      Fn::GetAtt: [task-worker, Url]
+
+  ServiceName:
+    Description: 服务名称
+    Value: ${self:service}
+
+  DeploymentRegion:
+    Description: 部署区域
+    Value: ${self:provider.region}
+
+# 打包配置
+package:
+  individually: true
+  exclude:
+    - .git/**
+    - node_modules/**
+    - README.md
+    - .env*
+    - logs/**
+    - docs/**
+    - scripts/**
+    - serverless.yml

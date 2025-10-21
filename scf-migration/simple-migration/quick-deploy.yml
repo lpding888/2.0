@@ -1,0 +1,38 @@
+# 快速部署配置 - 最简化版本
+service: ai-photo-simple
+
+provider:
+  name: tencent
+  runtime: Nodejs16.15
+  region: ap-guangzhou
+
+functions:
+  # 合并所有 API 到一个函数（减少复杂度）
+  api:
+    handler: api-wrapper.main
+    description: 统一API入口（替代微信云函数）
+    memorySize: 256
+    timeout: 30
+    environment:
+      variables:
+        # 数据库连接
+        MONGODB_URI: ${env:MONGODB_URI}
+        # JWT 密钥
+        JWT_SECRET: ${env:JWT_SECRET}
+        # 微信小程序配置
+        WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+        WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+    events:
+      - httpApi:
+          path: /api/{action}
+          method: post
+      - httpApi:
+          path: /api
+          method: post
+
+# 输出函数URL
+outputs:
+  ApiUrl:
+    Description: API 访问地址
+    Value:
+      Fn::GetAtt: [api, Url)

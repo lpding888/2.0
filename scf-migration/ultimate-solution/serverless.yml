@@ -1,0 +1,541 @@
+# AI摄影师小程序 - 终极部署配置
+# 支持个人版+商业版双模式架构
+
+service: ai-photography-ultimate
+
+# 全局配置
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+
+  # 凭证配置
+  credentials: ~/.tencentcloud/credentials.ini
+
+  # 环境变量
+  environment:
+    # 数据库配置
+    MONGODB_URI: ${env:MONGODB_URI}
+    REDIS_URI: ${env:REDIS_URI}
+
+    # 认证配置
+    JWT_SECRET: ${env:JWT_SECRET}
+    WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+    WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+
+    # 存储配置
+    COS_SECRET_ID: ${env:COS_SECRET_ID}
+    COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+    COS_BUCKET: ${env:COS_BUCKET}
+    COS_REGION: ${env:COS_REGION}
+
+    # AI 服务配置（多厂商路由）
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}
+    DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}
+
+    # 业务模式配置
+    BUSINESS_MODE: ${env:BUSINESS_MODE}
+    ENABLE_CATALOG_INTEGRATION: ${env:ENABLE_CATALOG_INTEGRATION}
+
+# 自定义变量
+custom:
+  # 项目配置
+  project:
+    name: ai-photography
+    version: 2.0
+    mode: ${env:BUSINESS_MODE, 'personal'}
+
+  # AI 模型配置
+  aiModels:
+    # 商业版优先级排序
+    commercial:
+      primary: "seedream-v4"     # Seedream 4.0 (服装摄影专用)
+      fallback: ["gemini-2.0", "gpt-4-vision"]
+      costOptimized: "deepseek-vision"
+
+    # 个人版优先级排序
+    personal:
+      primary: "gemini-2.0"      # Gemini 2.0 (性价比高)
+      fallback: ["seedream-v4-lite", "deepseek-vision"]
+      free: "gpt-3.5-turbo-vision"
+
+  # 函数资源配置
+  resources:
+    # API 服务（轻量级）
+    api:
+      memory: 256MB
+      timeout: 30s
+      concurrency: 100
+
+    # AI 生成服务（高配置）
+    ai-generation:
+      memory: 2048MB
+      timeout: 300s  # 5分钟，适配复杂AI任务
+      concurrency: 20
+      provisioned: 1 # 预留1个实例，减少冷启动
+
+    # 图片处理服务（中配）
+    image-processing:
+      memory: 1024MB
+      timeout: 120s
+      concurrency: 50
+
+# 函数定义 - 按业务域划分
+functions:
+
+  # === 核心 API 服务 ===
+  api-gateway:
+    handler: api-gateway.main_handler
+    description: 统一API网关 - 路由所有请求
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+    reservedConcurrency: ${self:custom.resources.api.concurrency}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      # API网关触发器
+      - apigw:
+          path: /api
+          method: ANY
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: api-gateway
+        ENABLE_AUTH_MIDDLEWARE: true
+        RATE_LIMIT_ENABLED: true
+
+  # === 用户管理服务 ===
+  user-service:
+    handler: user-service.main_handler
+    description: 用户管理 - 注册登录、积分系统、权限控制
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - apigw:
+          path: /user
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: user-service
+        ENABLE_CREDIT_SYSTEM: true
+        ENABLE_SUBSCRIPTION: ${env:ENABLE_SUBSCRIPTION, 'false'}
+
+  # === AI 生成服务（双模式支持） ===
+  ai-generation-service:
+    handler: ai-generation.main_handler
+    description: AI生成服务 - 支持个人虚拟试衣+商业服装摄影
+    memorySize: ${self:custom.resources.ai-generation.memory}
+    timeout: ${self:custom.resources.ai-generation.timeout}
+    reservedConcurrency: ${self:custom.resources.ai-generation.concurrency}
+
+    layers:
+      - name: ai-dependencies
+        version: 1
+      - name: image-processing
+        version: 1
+
+    events:
+      - apigw:
+          path: /ai
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: ai-generation
+        ENABLE_SEEDREAM_V4: true
+        ENABLE_GEMINI_2: true
+        ENABLE_DEEPSEEK: true
+        ENABLE_CATALOG_INTEGRATION: ${env:ENABLE_CATALOG_INTEGRATION, 'false'}
+        DEFAULT_AI_MODEL: ${self:custom.aiModels.${self:custom.project.mode}.primary}
+
+  # === 数据万象 CI 服务 ===
+  ci-service:
+    handler: src/handlers/ci-service.main_handler
+    description: 数据万象服务 - 智能抠图、修复、质量评估
+    memorySize: ${self:custom.resources.image-processing.memory}
+    timeout: ${self:custom.resources.image-processing.timeout}
+
+    layers:
+      - name: ci-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /ci/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: ci-service
+        ENABLE_INTELLIGENT_MATTING: true
+        ENABLE_SMART_CROP: true
+        ENABLE_IMAGE_RESTORE: true
+        ENABLE_QUALITY_ASSESS: true
+
+  # === 支付服务（商业版） ===
+  payment-service:
+    handler: src/handlers/payment-service.main_handler
+    description: 支付服务 - 积分充值、订阅管理、订单处理
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /payment/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: payment-service
+        ENABLE_WECHAT_PAY: true
+        ENABLE_SUBSCRIPTION: ${env:ENABLE_SUBSCRIPTION, 'false'}
+        ENABLE_CREDIT_PACKAGES: true
+
+  # === 管理后台服务 ===
+  admin-service:
+    handler: src/handlers/admin-service.main_handler
+    description: 管理后台 - 用户管理、数据统计、AI模型配置
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /admin/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: admin-service
+        ADMIN_SECRET: ${env:ADMIN_SECRET}
+        ENABLE_ANALYTICS: true
+        ENABLE_MODEL_MANAGEMENT: true
+
+  # === AI造型师服务 ===
+  ai-stylist-service:
+    handler: src/services/ai-stylist-service.main_handler
+    description: AI造型师 - 专业服装搭配和造型建议
+    memorySize: ${self:custom.resources.ai-generation.memory}
+    timeout: ${self:custom.resources.ai-generation.timeout}
+
+    layers:
+      - name: ai-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /stylist/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: ai-stylist-service
+        ENABLE_GPT4_VISION: true
+        ENABLE_GEMINI_PRO: true
+        ENABLE_DEEPSEEK: true
+
+  # === 腾讯云CI服务 ===
+  tencent-ci-service:
+    handler: src/services/tencent-ci-service.main_handler
+    description: 腾讯云数据万象 - 智能抠图、图片处理、质量评估
+    memorySize: ${self:custom.resources.image-processing.memory}
+    timeout: ${self:custom.resources.image-processing.timeout}
+
+    layers:
+      - name: ci-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /ci/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: tencent-ci-service
+        ENABLE_INTELLIGENT_MATTING: true
+        ENABLE_SMART_CROP: true
+        ENABLE_IMAGE_RESTORE: true
+        ENABLE_QUALITY_ASSESS: true
+
+  # === 高级缓存服务 ===
+  cache-service:
+    handler: src/services/cache-service.main_handler
+    description: 高级缓存系统 - 多级缓存策略、智能预热
+    memorySize: 512MB
+    timeout: 30s
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /cache/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: cache-service
+        ENABLE_MEMORY_CACHE: true
+        ENABLE_REDIS_CACHE: true
+        ENABLE_CDN_CACHE: true
+
+  # === 异步任务处理器 ===
+  async-task-processor:
+    handler: src/services/async-task-processor.main_handler
+    description: 异步任务处理器 - 突破60秒限制，支持长时间运行任务
+    memorySize: ${self:custom.resources.ai-generation.memory}
+    timeout: 900s  # 15分钟，突破60秒限制
+
+    layers:
+      - name: ai-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /task/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: async-task-processor
+        MAX_CONCURRENT_TASKS: 5
+        DEFAULT_TASK_TIMEOUT: 900000  # 15分钟
+        ENABLE_TASK_MONITORING: true
+
+  # === 商业服装摄影服务 ===
+  photography-service:
+    handler: src/services/photography-service.main_handler
+    description: 商业服装摄影 - 姿势裂变、多服装并行、场景化生成
+    memorySize: ${self:custom.resources.ai-generation.memory}
+    timeout: 900s  # 15分钟，支持复杂摄影任务
+
+    layers:
+      - name: ai-dependencies
+        version: 1
+      - name: image-processing
+        version: 1
+
+    events:
+      - http:
+          path: /photography/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: photography-service
+        ENABLE_POSE_VARIATION: true
+        ENABLE_MULTI_CLOTHING: true
+        ENABLE_SCENE_INTEGRATION: true
+        CREDITS_PER_CLOTHING: 1
+
+  # === 虚拟试衣服务 ===
+  fitting-service:
+    handler: src/services/fitting-service.main_handler
+    description: 虚拟试衣服务 - 多角度试衣、批量处理、智能融合
+    memorySize: ${self:custom.resources.ai-generation.memory}
+    timeout: 900s  # 15分钟，支持复杂试衣任务
+
+    layers:
+      - name: ai-dependencies
+        version: 1
+      - name: image-processing
+        version: 1
+
+    events:
+      - http:
+          path: /fitting/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: fitting-service
+        ENABLE_MULTI_ANGLE: true
+        ENABLE_BATCH_PROCESSING: true
+        ENABLE_INTELLIGENT_BLENDING: true
+        CREDITS_PER_FITTING: 1
+
+  # === 任务状态机处理器 ===
+  task-processor:
+    handler: src/services/task-processor.main_handler
+    description: 任务状态机处理器 - 8状态流程管理、自动重试、积分退还
+    memorySize: 512MB
+    timeout: 300s  # 5分钟，处理状态队列
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /task-processor/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: task-processor
+        MAX_RETRIES: 3
+        RETRY_DELAY_BASE: 5000  # 5秒基础延迟
+        ENABLE_EXPIRED_TASK_CLEANUP: true
+        EXPIRED_TASK_HOURS: 24
+
+  # === 场景管理服务 ===
+  scene-service:
+    handler: src/services/scene-service.main_handler
+    description: 场景管理服务 - 摄影场景、参数配置、使用统计
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /scene/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: scene-service
+        ENABLE_SCENE_SEARCH: true
+        ENABLE_USAGE_TRACKING: true
+        ENABLE_ADMIN_MANAGEMENT: true
+
+  # === 提示词生成服务 ===
+  prompt-service:
+    handler: src/services/prompt-service.main_handler
+    description: 提示词生成服务 - 专业AI提示词模板、多语言支持
+    memorySize: ${self:custom.resources.api.memory}
+    timeout: ${self:custom.resources.api.timeout}
+
+    layers:
+      - name: common-dependencies
+        version: 1
+
+    events:
+      - http:
+          path: /prompt/{action}
+          method: POST
+          cors: true
+
+    environment:
+      variables:
+        FUNCTION_TYPE: prompt-service
+        ENABLE_CUSTOM_PROMPTS: true
+        ENABLE_TEMPLATE_MANAGEMENT: true
+        DEFAULT_LANGUAGE: zh-CN
+        SUPPORTED_LANGUAGES: "zh-CN,en-US"
+
+# === 共享层定义 ===
+layers:
+  # 通用依赖层（数据库、认证等）
+  common-dependencies:
+    path: layers/common
+    description: 通用依赖包 - MongoDB客户端、JWT、工具函数
+    compatibleRuntimes:
+      - Nodejs18.15
+    license: MIT
+
+  # AI 处理依赖层（AI模型调用、图片处理）
+  ai-dependencies:
+    path: layers/ai
+    description: AI处理依赖包 - OpenAI、Gemini、Seedream客户端
+    compatibleRuntimes:
+      - Nodejs18.15
+    license: MIT
+
+  # 数据万象依赖层
+  ci-dependencies:
+    path: layers/ci
+    description: 数据万象依赖包 - COS客户端、CI处理
+    compatibleRuntimes:
+      - Nodejs18.15
+    license: MIT
+
+  # 图片处理依赖层
+  image-processing:
+    path: layers/image-processing
+    description: 图片处理依赖包 - JIMP、Sharp等
+    compatibleRuntimes:
+      - Nodejs18.15
+    license: MIT
+
+# === 插件配置 ===
+plugins:
+  - serverless-tencent-scf     # 腾讯云SCF插件
+  - serverless-dotenv-plugin   # 环境变量管理
+
+# === 输出配置 ===
+outputs:
+  # 函数 URL 输出
+  ApiGatewayUrl:
+    Description: 统一API网关地址
+    Value:
+      Fn::GetAtt: [api-gateway, HttpsUrl]
+
+  AiGenerationUrl:
+    Description: AI生成服务地址
+    Value:
+      Fn::GetAtt: [ai-generation-service, HttpsUrl]
+
+  CIServiceUrl:
+    Description: 数据万象服务地址
+    Value:
+      Fn::GetAtt: [ci-service, HttpsUrl]
+
+  # 部署信息
+  ServiceName:
+    Description: 服务名称
+    Value: ${self:service}
+
+  DeploymentRegion:
+    Description: 部署区域
+    Value: ${self:provider.region}
+
+# === 打包配置 ===
+package:
+  individually: true  # 每个函数独立打包
+  exclude:
+    - .git/**
+    - .serverless/**
+    - node_modules/**
+    - README.md
+    - .env*
+    - logs/**
+    - coverage/**
+    - test/**

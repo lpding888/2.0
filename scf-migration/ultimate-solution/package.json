@@ -1,0 +1,143 @@
+{
+  "name": "ai-photography-ultimate",
+  "version": "2.0.0",
+  "description": "AI摄影师小程序 - 腾讯云SCF版（支持个人版+商业版双模式）",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "serverless offline",
+    "build": "npm run clean && npm run build:layers && npm run build:functions",
+    "build:layers": "npm run build:layer-common && npm run build:layer-ai && npm run build:layer-ci && npm run build:layer-image",
+    "build:layer-common": "cd layers/common && npm install && zip -r ../common-layer.zip .",
+    "build:layer-ai": "cd layers/ai && npm install && zip -r ../ai-layer.zip .",
+    "build:layer-ci": "cd layers/ci && npm install && zip -r ../ci-layer.zip .",
+    "build:layer-image": "cd layers/image-processing && npm install && zip -r ../image-processing-layer.zip .",
+    "build:functions": "serverless package",
+    "build:prod": "NODE_ENV=production npm run build",
+    "deploy:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-dev.ps1",
+    "deploy:prod": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-prod.ps1",
+    "migrate": "powershell -ExecutionPolicy Bypass -File ./scripts/migrate-data.ps1",
+    "migrate:dryrun": "powershell -ExecutionPolicy Bypass -File ./scripts/migrate-data.ps1 -DryRun",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ layers/ --ext .js",
+    "lint:fix": "eslint src/ layers/ --ext .js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"layers/**/*.js\"",
+    "clean": "rimraf .serverless/ *.zip",
+    "migration:check": "node scripts/check-migration.js",
+    "migration:up": "node scripts/run-migration.js",
+    "db:backup": "node scripts/backup-database.js",
+    "logs:dev": "serverless logs -f api-gateway --stage dev --tail",
+    "logs:prod": "serverless logs -f api-gateway --stage prod --tail",
+    "info:dev": "serverless info --stage dev",
+    "info:prod": "serverless info --stage prod",
+    "remove:dev": "serverless remove --stage dev",
+    "remove:prod": "serverless remove --stage prod"
+  },
+  "keywords": [
+    "ai",
+    "photography",
+    "wechat",
+    "miniprogram",
+    "tencent-cloud",
+    "scf",
+    "serverless",
+    "virtual-try-on",
+    "fashion-photography"
+  ],
+  "author": "AI Photography Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/ai-photography.git"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "cos-nodejs-sdk-v5": "^2.11.19",
+    "crypto": "^1.0.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0",
+    "helmet": "^7.0.0",
+    "jimp": "^0.22.10",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "qcloud-cos-sts": "^2.0.7",
+    "redis": "^4.6.8",
+    "sharp": "^0.32.5",
+    "uuid": "^9.0.0",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "eslint": "^8.48.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-node": "^11.1.0",
+    "jest": "^29.6.4",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.0.3",
+    "rimraf": "^5.0.1",
+    "serverless": "^3.40.0",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-tencent-scf": "^0.1.36",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=18.15.0",
+    "npm": ">=9.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js",
+      "!src/config/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "prettier"
+    ],
+    "env": {
+      "node": true,
+      "es2022": true,
+      "jest": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2022,
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-console": "warn",
+      "no-unused-vars": "error",
+      "prefer-const": "error"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5"
+  },
+  "serverless": {
+    "frameworkVersion": "3",
+    "plugins": [
+      "serverless-tencent-scf",
+      "serverless-dotenv-plugin"
+    ]
+  }
+}

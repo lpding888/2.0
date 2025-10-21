@@ -1,0 +1,268 @@
+# 腾讯云函数 SCF 部署配置
+# 使用 Serverless Framework 进行部署
+
+service: ai-photography-scf
+
+# 全局配置
+provider:
+  name: tencent
+  runtime: Nodejs16.15
+  region: ap-guangzhou
+  memorySize: 512
+  timeout: 30
+  environment:
+    # 全局环境变量
+    NODE_ENV: production
+    TZ: Asia/Shanghai
+
+# 自定义变量
+custom:
+  # 项目配置
+  project:
+    name: ai-photography
+    stage: prod
+
+  # 数据库配置
+  database:
+    name: ai-photography
+    uri: ${env:MONGODB_URI}
+
+  # COS配置
+  cos:
+    bucket: ${env:COS_BUCKET}
+    region: ${env:COS_REGION}
+    secretId: ${env:COS_SECRET_ID}
+    secretKey: ${env:COS_SECRET_KEY}
+
+# 函数定义
+functions:
+
+  # 用户管理服务
+  user-service:
+    handler: functions/user-service/index.handler
+    description: 用户管理、注册登录、积分管理
+    memorySize: 256
+    timeout: 20
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+        WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+        WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+    events:
+      - httpApi:
+          path: /user/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+
+  # 作品管理服务
+  work-service:
+    handler: functions/work-service/index.handler
+    description: 作品管理、列表查询、详情展示
+    memorySize: 512
+    timeout: 30
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+    events:
+      - httpApi:
+          path: /work/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+
+  # 摄影生成服务
+  photography-service:
+    handler: functions/photography-service/index.handler
+    description: 服装摄影生成、AI处理
+    memorySize: 1024
+    timeout: 60
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+        OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+        GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+        COS_SECRET_ID: ${env:COS_SECRET_ID}
+        COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+        COS_BUCKET: ${env:COS_BUCKET}
+        COS_REGION: ${env:COS_REGION}
+    events:
+      - httpApi:
+          path: /photography/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+      - name: ai-layer
+        version: 1
+
+  # 试衣生成服务
+  fitting-service:
+    handler: functions/fitting-service/index.handler
+    description: 虚拟试衣生成、AI处理
+    memorySize: 1024
+    timeout: 60
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+        OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+        GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+        COS_SECRET_ID: ${env:COS_SECRET_ID}
+        COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+        COS_BUCKET: ${env:COS_BUCKET}
+        COS_REGION: ${env:COS_REGION}
+    events:
+      - httpApi:
+          path: /fitting/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+      - name: ai-layer
+        version: 1
+
+  # 支付服务
+  payment-service:
+    handler: functions/payment-service/index.handler
+    description: 支付管理、积分充值、订单处理
+    memorySize: 256
+    timeout: 30
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+        WECHAT_PAY_MCH_ID: ${env:WECHAT_PAY_MCH_ID}
+        WECHAT_PAY_KEY: ${env:WECHAT_PAY_KEY}
+    events:
+      - httpApi:
+          path: /payment/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+
+  # 管理员服务
+  admin-service:
+    handler: functions/admin-service/index.handler
+    description: 管理员功能、数据统计、用户管理
+    memorySize: 512
+    timeout: 60
+    environment:
+      variables:
+        JWT_SECRET: ${env:JWT_SECRET}
+        ADMIN_SECRET: ${env:ADMIN_SECRET}
+    events:
+      - httpApi:
+          path: /admin/{action}
+          method: post
+    layers:
+      - name: common-layer
+        version: 1
+
+  # 任务处理器（后台任务）
+  task-processor:
+    handler: functions/task-processor/index.handler
+    description: 异步任务处理、队列管理
+    memorySize: 1024
+    timeout: 900 # 15分钟，用于AI生成任务
+    environment:
+      variables:
+        OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+        GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+        COS_SECRET_ID: ${env:COS_SECRET_ID}
+        COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+        COS_BUCKET: ${env:COS_BUCKET}
+        COS_REGION: ${env:COS_REGION}
+    events:
+      # 定时触发器，每分钟检查一次任务队列
+      - timer:
+          name: task-checker
+          schedule: 'rate(1 minute)'
+          input:
+            action: processPendingTasks
+    layers:
+      - name: common-layer
+        version: 1
+      - name: ai-layer
+        version: 1
+
+# 共享层定义
+layers:
+  # 通用依赖层（数据库连接、认证等）
+  common-layer:
+    path: layers/common
+    description: 通用依赖包（数据库、认证、工具函数）
+    compatibleRuntimes:
+      - Nodejs16.15
+    license: MIT
+
+  # AI处理依赖层（AI模型调用、图片处理等）
+  ai-layer:
+    path: layers/ai
+    description: AI处理依赖包（OpenAI、图片处理等）
+    compatibleRuntimes:
+      - Nodejs16.15
+    license: MIT
+
+# 资源配置
+resources:
+  # 应用网关配置
+  Type: TencentCloud::ApiGateway::Stage
+  Properties:
+    StageName: ${opt:stage, 'release'}
+    Description: AI摄影师小程序API网关
+
+  # 云数据库配置
+  Type: TencentCloud::MongoDB::Instance
+  Properties:
+    InstanceName: ${self:custom.project.name}-${self:custom.project.stage}
+    Memory: 4GB
+    Volume: 100GB
+    EngineVersion: 4.4
+
+# 插件配置
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+# 输出配置
+outputs:
+  # 函数URL输出
+  UserServiceUrl:
+    Description: 用户服务API地址
+    Value:
+      Fn::GetAtt: [UserServiceLambdaFunction, Url]
+
+  WorkServiceUrl:
+    Description: 作品服务API地址
+    Value:
+      Fn::GetAtt: [WorkServiceLambdaFunction, Url]
+
+  PhotographyServiceUrl:
+    Description: 摄影服务API地址
+    Value:
+      Fn::GetAtt: [PhotographyServiceLambdaFunction, Url]
+
+# 部署脚本
+package:
+  individually: true
+  exclude:
+    - .git/**
+    - .serverless/**
+    - node_modules/**
+    - README.md
+
+# 部署阶段
+stages:
+  dev:
+    environment:
+      MONGODB_URI: ${env:DEV_MONGODB_URI}
+      JWT_SECRET: ${env:DEV_JWT_SECRET}
+      COS_BUCKET: ${env:DEV_COS_BUCKET}
+
+  prod:
+    environment:
+      MONGODB_URI: ${env:MONGODB_URI}
+      JWT_SECRET: ${env:JWT_SECRET}
+      COS_BUCKET: ${env:COS_BUCKET}

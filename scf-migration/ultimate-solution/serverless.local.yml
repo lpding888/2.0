@@ -1,0 +1,41 @@
+# 本地开发配置 - 模拟环境
+service: ai-photography-local
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: local
+
+functions:
+  # 本地测试API网关
+  api-gateway:
+    handler: src/handlers/api-gateway.main
+    events:
+      - http:
+          path: /api/{action}
+          method: ANY
+
+  # 本地测试用户服务
+  user-service:
+    handler: src/handlers/user-service.main
+    events:
+      - http:
+          path: /user/{action}
+          method: POST
+
+  # 本地测试AI生成服务
+  ai-generation:
+    handler: src/handlers/ai-generation.main
+    events:
+      - http:
+          path: /ai/{action}
+          method: POST
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true

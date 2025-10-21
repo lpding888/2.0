@@ -1,0 +1,42 @@
+# 简化版腾讯云SCF配置 - 用于快速验证部署
+service: ai-photography-simple
+
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+  credentials: ~/.tencentcloud/credentials.ini
+
+functions:
+  # 简化的API网关函数
+  simple-api:
+    handler: backend/src/handlers/scf-api-gateway.main_handler
+    description: 简化API网关 - 验证SCF部署
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: ANY
+            path: /{proxy+}
+            enableCORS: true
+            integratedResponse: true
+
+plugins:
+  - serverless-tencent-scf
+  - serverless-dotenv-plugin
+
+package:
+  include:
+    - backend/src/handlers/scf-api-gateway.js
+    - backend/src/utils/**
+  exclude:
+    - .git/**
+    - .serverless/**
+    - node_modules/**
+    - README.md
+    - logs/**
+    - test/**
+    - cloudfunctions/**
