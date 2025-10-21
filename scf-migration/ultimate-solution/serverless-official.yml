@@ -1,0 +1,157 @@
+# AI摄影师小程序 - 基于官方文档的SCF架构
+# 严格遵循腾讯云SCF官方文档规范
+
+service: ai-photography-scf-official
+
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+  credentials: ~/.tencentcloud/credentials.ini
+
+  # 环境变量
+  environment:
+    NODE_ENV: production
+    MONGODB_URI: ${env:MONGODB_URI}
+    REDIS_URI: ${env:REDIS_URI}
+    JWT_SECRET: ${env:JWT_SECRET}
+    WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+    WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+    COS_SECRET_ID: ${env:COS_SECRET_ID}
+    COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+    COS_BUCKET: ${env:COS_BUCKET}
+    COS_REGION: ${env:COS_REGION}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}
+    DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}
+    BUSINESS_MODE: ${env:BUSINESS_MODE, 'hybrid'}
+
+# 函数定义 - 基于官方文档的Web函数类型
+functions:
+
+  # 统一API入口 - Web函数类型
+  api-gateway:
+    handler: api-gateway.main_handler
+    description: 统一API入口 - 基于官方文档Web函数
+    memorySize: 512
+    timeout: 30
+    type: web  # Web函数类型，自动启用Function URL
+    environment:
+      variables:
+        FUNCTION_TYPE: api-gateway
+
+  # 摄影服务核心 - Web函数类型
+  photography-service:
+    handler: photography-service.main_handler
+    description: 摄影业务核心 - 包含状态机和AI生成
+    memorySize: 2048
+    timeout: 900  # 15分钟，充分利用SCF优势
+    type: web  # Web函数类型
+    environment:
+      variables:
+        FUNCTION_TYPE: photography-service
+
+  # 试衣服务核心 - Web函数类型
+  fitting-service:
+    handler: fitting-service.main_handler
+    description: 试衣业务核心 - 包含状态机和AI生成
+    memorySize: 2048
+    timeout: 900  # 15分钟
+    type: web  # Web函数类型
+    environment:
+      variables:
+        FUNCTION_TYPE: fitting-service
+
+  # 用户管理服务 - Web函数类型
+  user-service:
+    handler: user-service.main_handler
+    description: 用户管理 - 注册登录、积分系统
+    memorySize: 256
+    timeout: 30
+    type: web  # Web函数类型
+    environment:
+      variables:
+        FUNCTION_TYPE: user-service
+
+  # 文件存储服务 - Web函数类型
+  storage-service:
+    handler: storage-service.main_handler
+    description: 文件存储管理 - 去重、权限控制
+    memorySize: 512
+    timeout: 60
+    type: web  # Web函数类型
+    environment:
+      variables:
+        FUNCTION_TYPE: storage-service
+
+  # 数据管理服务 - Web函数类型
+  data-service:
+    handler: data-service.main_handler
+    description: 数据管理 - 场景、提示词、AI模型配置
+    memorySize: 256
+    timeout: 30
+    type: web  # Web函数类型
+    environment:
+      variables:
+        FUNCTION_TYPE: data-service
+
+# 插件配置 - 官方推荐插件
+plugins:
+  - serverless-tencent-scf
+  - serverless-dotenv-plugin
+
+# 输出配置 - Function URL地址
+outputs:
+  ApiGatewayUrl:
+    Description: API网关Function URL地址
+    Value:
+      Fn::GetAtt: [api-gateway, Url]
+
+  PhotographyServiceUrl:
+    Description: 摄影服务Function URL地址
+    Value:
+      Fn::GetAtt: [photography-service, Url]
+
+  FittingServiceUrl:
+    Description: 试衣服务Function URL地址
+    Value:
+      Fn::GetAtt: [fitting-service, Url]
+
+  UserServiceUrl:
+    Description: 用户服务Function URL地址
+    Value:
+      Fn::GetAtt: [user-service, Url]
+
+  StorageServiceUrl:
+    Description: 存储服务Function URL地址
+    Value:
+      Fn::GetAtt: [storage-service, Url]
+
+  DataServiceUrl:
+    Description: 数据服务Function URL地址
+    Value:
+      Fn::GetAtt: [data-service, Url]
+
+  ServiceName:
+    Description: 服务名称
+    Value: ${self:service}
+
+  DeploymentRegion:
+    Description: 部署区域
+    Value: ${self:provider.region}
+
+# 打包配置 - 官方推荐配置
+package:
+  individually: true  # 独立打包每个函数
+  exclude:
+    - .git/**
+    - node_modules/**
+    - README.md
+    - .env*
+    - logs/**
+    - docs/**
+    - scripts/**
+    - serverless*.yml
+    - 基于官方文档的架构设计.md

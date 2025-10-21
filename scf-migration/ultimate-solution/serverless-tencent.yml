@@ -1,0 +1,212 @@
+# AI摄影师小程序 - 腾讯云SCF标准配置
+# 完全符合腾讯云Serverless Framework SCF组件规范
+
+service: ai-photography-scf
+
+# 全局配置
+provider:
+  name: tencent
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  stage: dev
+
+  # 凭证配置
+  credentials: ~/.tencentcloud/credentials.ini
+
+  # 环境变量
+  environment:
+    variables:
+      # 数据库配置
+      MONGODB_URI: ${env:MONGODB_URI}
+      REDIS_URI: ${env:REDIS_URI}
+
+      # 认证配置
+      JWT_SECRET: ${env:JWT_SECRET}
+      WECHAT_APP_ID: ${env:WECHAT_APP_ID}
+      WECHAT_APP_SECRET: ${env:WECHAT_APP_SECRET}
+
+      # 存储配置
+      COS_SECRET_ID: ${env:COS_SECRET_ID}
+      COS_SECRET_KEY: ${env:COS_SECRET_KEY}
+      COS_BUCKET: ${env:COS_BUCKET}
+      COS_REGION: ${env:COS_REGION}
+
+      # AI 服务配置
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+      GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+      SEEDREAM_API_KEY: ${env:SEEDREAM_API_KEY}
+      DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY}
+
+      # 业务模式配置
+      BUSINESS_MODE: ${env:BUSINESS_MODE, 'hybrid'}
+      ENABLE_CATALOG_INTEGRATION: ${env:ENABLE_CATALOG_INTEGRATION, 'false'}
+      ENABLE_SUBSCRIPTION: ${env:ENABLE_SUBSCRIPTION, 'false'}
+
+      # 管理配置
+      ADMIN_SECRET: ${env:ADMIN_SECRET}
+
+  # 默认配置
+  memorySize: 256
+  timeout: 30
+  role: DEFAULT
+
+# 函数定义
+functions:
+
+  # === 核心 API 网关服务 ===
+  api-gateway:
+    handler: src/handlers/api-gateway.main_handler
+    description: 统一API网关 - 路由所有请求
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: ANY
+            path: /api/{action}
+            enableCORS: true
+            integratedResponse: true
+            serviceTimeout: 30
+
+  # === 用户管理服务 ===
+  user-service:
+    handler: src/handlers/user-service.main_handler
+    description: 用户管理 - 注册登录、积分系统、权限控制
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /user/{action}
+            enableCORS: true
+            integratedResponse: true
+
+  # === AI 生成服务 ===
+  ai-generation-service:
+    handler: src/handlers/ai-generation.main_handler
+    description: AI生成服务 - 支持个人虚拟试衣+商业服装摄影
+    memorySize: 2048
+    timeout: 300  # 5分钟，突破60秒限制
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /ai/{action}
+            enableCORS: true
+            integratedResponse: true
+            serviceTimeout: 300
+
+  # === AI造型师服务 ===
+  ai-stylist-service:
+    handler: src/services/ai-stylist-service.main_handler
+    description: AI造型师 - 专业服装搭配和造型建议
+    memorySize: 2048
+    timeout: 300
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /stylist/{action}
+            enableCORS: true
+            integratedResponse: true
+            serviceTimeout: 300
+
+  # === 腾讯云CI服务 ===
+  tencent-ci-service:
+    handler: src/services/tencent-ci-service.main_handler
+    description: 腾讯云数据万象 - 智能抠图、图片处理、质量评估
+    memorySize: 1024
+    timeout: 120
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /ci/{action}
+            enableCORS: true
+            integratedResponse: true
+
+  # === 高级缓存服务 ===
+  cache-service:
+    handler: src/services/cache-service.main_handler
+    description: 高级缓存系统 - 多级缓存策略、智能预热
+    memorySize: 512
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /cache/{action}
+            enableCORS: true
+            integratedResponse: true
+
+  # === 异步任务处理器 ===
+  async-task-processor:
+    handler: src/services/async-task-processor.main_handler
+    description: 异步任务处理器 - 突破60秒限制，支持长时间运行任务
+    memorySize: 2048
+    timeout: 900  # 15分钟，突破60秒限制
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /task/{action}
+            enableCORS: true
+            integratedResponse: true
+            serviceTimeout: 900
+
+  # === 支付服务 ===
+  payment-service:
+    handler: src/handlers/payment-service.main_handler
+    description: 支付服务 - 积分充值、订阅管理、订单处理
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /payment/{action}
+            enableCORS: true
+            integratedResponse: true
+
+  # === 管理后台服务 ===
+  admin-service:
+    handler: src/handlers/admin-service.main_handler
+    description: 管理后台 - 用户管理、数据统计、AI模型配置
+    memorySize: 256
+    timeout: 30
+    events:
+      - apigw:
+          parameters:
+            stageName: release
+            httpMethod: POST
+            path: /admin/{action}
+            enableCORS: true
+            integratedResponse: true
+
+# === 插件配置 ===
+plugins:
+  - serverless-tencent-scf     # 腾讯云SCF插件
+  - serverless-dotenv-plugin   # 环境变量管理
+
+# === 打包配置 ===
+package:
+  individually: false  # 统一打包
+  exclude:
+    - .git/**
+    - .serverless/**
+    - node_modules/**
+    - README.md
+    - .env*
+    - logs/**
+    - coverage/**
+    - test/**
+    - cloudfunctions/**  # 排除原有微信云函数
